@@ -1,0 +1,41 @@
+# Ignore Python virtual environments
+venv/
+.env
+.env.local
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.sqlite3
+
+# Ignore FastAPI dependencies and cache
+*.log
+*.db
+instance/
+.cache/
+*.egg-info/
+
+# Ignore Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore VS Code settings and other IDE files
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Ignore Next.js build and dependency files
+frontend/.next/
+frontend/node_modules/
+frontend/.env.local
+frontend/.eslintcache
+
+# Ignore coverage reports
+coverage/
+.coverage
+htmlcov/
+
+# Ignore Docker-related files (if you add Docker later)
+docker-compose.yml
+.Dockerfile
+docker/

@@ -1,0 +1,18 @@
+# Core dependencies
+fastapi
+uvicorn
+
+# OpenAI and Vector DB (Pinecone)
+openai
+pinecone-client
+
+# UI & API interaction
+gradio
+jupyter
+ipywidgets
+
+# Additional utilities
+python-dotenv
+httpx
+websockets
+strawberry-graphql
