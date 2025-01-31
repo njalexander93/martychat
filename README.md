@@ -1,4 +1,4 @@
-# MartyChat
+# <img src="assets/png/MartyChat_Full-833x200.png" height="100px" alt="MartyChat Logo">
 
 MartyChat is an AI-powered chatbot designed to assist users with **academic-based answers to psychology questions**. It provides reliable, well-researched responses to psychology-related queries.
 
