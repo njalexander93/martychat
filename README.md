@@ -23,11 +23,16 @@ MartyChat consists of:
 
 ---
 
+## Prerequisites
+- **Node.js** (version 14.x or later)
+- **Python** (version 3.12.3)
+- **git**
+
 ## 🛠️ Setup Instructions
 
 ### 1️⃣ Clone the Repository
 ```sh
-git clone https://github.com/yourusername/martychat.git
+git clone https://github.com/\<your_username\>/martychat.git
 cd martychat
 ```
 
@@ -39,13 +44,14 @@ source venv/bin/activate  # (On Windows use `venv\Scripts\activate`)
 pip install -r requirements.txt
 ```
 
+#### Set Up Environment Variables
+Create a .env file in the `backend` directory and add your environment-specific variables.
+
 #### Run FastAPI
 ```sh
 uvicorn backend.main:app --reload
 ```
 - The API will be available at **http://127.0.0.1:8000/**.
-
----
 
 ### 3️⃣ Set Up Frontend (Next.js)
 #### Install Node.js & Dependencies
@@ -56,6 +62,11 @@ npm install
 npm run dev
 ```
 - The frontend will be available at **http://localhost:3000/**.
+
+### 4️⃣ Rebuild for Production (if needed)
+```sh
+npm run build
+```
 
 ---
 
@@ -70,7 +81,7 @@ martychat/
 │   ├── utils/           # Helper functions
 │
 │── frontend/            # Next.js Frontend
-│   ├── pages/           # Page-based routing
+│   ├── app/             # Application directory
 │   ├── components/      # Reusable UI components
 │   ├── public/          # Static assets
 │
@@ -107,4 +118,4 @@ martychat/
 ---
 
 ## 🚨 Private Repository Notice
-This is a **closed-source private project**. **Unauthorized distribution or public sharing is prohibited.**
+This is a **closed-source private project**. Unauthorized distribution or public sharing is prohibited.

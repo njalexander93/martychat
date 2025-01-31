@@ -30,10 +30,6 @@ frontend/node_modules/
 frontend/.env.local
 frontend/.eslintcache
 
-# Ignore package lock files (optional)
-package-lock.json
-yarn.lock
-
 # Ignore coverage reports
 coverage/
 .coverage
