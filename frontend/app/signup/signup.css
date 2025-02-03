@@ -1,0 +1,40 @@
+#signup-form {
+    /* background: linear-gradient(to right, #823a45, #630917, ); */
+    background-color: #dfdfdf;
+}
+
+#signup-form h1 {
+    font-family: var(--font-roboto-slab);
+}
+
+#signup-form input,
+#signup-form label,
+#signup-form p {
+    font-family: var(--font-roboto-flex);
+}
+
+#signup-form h1,
+#signup-form label {
+    color: #4c4c4c;
+}
+
+
+#signup-form input {
+    color: #717171;
+}
+
+#submit-button {
+    font-family: var(--font-roboto-slab);
+    background-color: #630917;
+    color: #dfdfdf;
+}
+
+#submit-button:hover {
+    background-color: #771424;
+    color: #f3f3f3;
+}
+
+#submit-button:active {
+    background-color: #510d18;
+    color: #d1d1d1;
+}

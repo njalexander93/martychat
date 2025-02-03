@@ -1,12 +1,15 @@
+/* Import tailwind styles */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* Define CSS variables for light mode */
 :root {
   --background: #ffffff;
   --foreground: #171717;
 }
 
+/* Define CSS variables for dark mode */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
@@ -14,8 +17,14 @@
   }
 }
 
+/* Main body element style */
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Make the target object unselectable */
+.unselectable {
+  user-select: none;
 }

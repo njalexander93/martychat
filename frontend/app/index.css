@@ -1,0 +1,72 @@
+.link {
+    color: rgba(0, 0, 0, 0.6); /* Faded text color */
+    transition: color 0.3s ease, transform 0.3s ease; /* Smooth transition for color and transform */
+    position: relative; /* Required for the underline effect */
+    font-size: 20px;
+    font-weight: 400; /* Normal text */
+  }
+
+  .link::after {
+    content: '';
+    position: absolute;
+    display: block;
+    width: 0;
+    height: 2px;
+    bottom: -2px;
+    left: 0;
+    background-color: currentColor;
+    transition: width 0.5s ease; /* Smooth transition for the underline */
+  }
+
+  .link:hover {
+    color: rgba(0, 0, 0, 1); /* Brighter text color */
+    transform: scale(1.07); /* Slightly grow the text */
+  }
+
+  .link:hover::after {
+    width: 100%; /* Grow the underline from left to right */
+  }
+
+  .link:active {
+    transform: scale(0.93); /* Slightly shrink the text */
+  }
+
+  #link-login {
+    /* background-color: blue; */
+    color: rgba(99, 9, 23, 1);
+    /* padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); */
+  }
+
+  #link-login:hover {
+    font-weight: 700; /* Bold text */
+  }
+
+  #link-signup {
+    background-color: rgba(99, 9, 23, 1);
+    color: rgba(223, 223, 223, 0.8);
+    padding: 0.5rem 1rem;
+    position: relative;
+    border-radius: 19px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  }
+
+  #link-signup::after {
+    bottom: 0.4rem; /* Position the underline inside the border */
+    left: 0; /* Center the underline */
+    right: 0; /* Center the underline */
+    margin-left: 1rem;
+    margin-right: 1rem;
+    width: 0;
+    box-shadow: 0.05 4.05px 6.05px rgba(0, 0, 0, 2);
+
+  }
+
+  #link-signup:hover::after {
+    width: calc(100% - 2rem); /* Grow the underline from left to right, stopping 1rem before the end */
+  }
+
+  #link-signup:active {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* Slightly shrink the shadow */
+  }
