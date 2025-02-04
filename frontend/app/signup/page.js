@@ -1,3 +1,15 @@
+/**
+ * @fileoverview Signup page component for the MartyChat application.
+ * This file defines the signup page, including form handling and validation.
+ *
+ * @author Nikolai Alexander
+ * @email njalexander93@gmail.com
+ * @version 1.0.0
+ * @date TBD
+ * @license Proprietary
+ * @copyright Copyright (c) 2025 MartyChat
+ */
+
 "use client";  // Required for using useEffect in the Next.js App Router
 
 import { useState } from "react";
@@ -5,6 +17,11 @@ import Link from "next/link";
 import AuthenticationForm from "../../components/authentication_layout";
 import sanitizeHtml from "sanitize-html";
 
+/**
+ * Signup page component.
+ *
+ * @returns {React.Element} The rendered signup page component.
+ */
 export default function SignupPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -19,12 +36,23 @@ export default function SignupPage() {
   const [nameError, setNameError] = useState({ firstName: "", lastName: "" });
   const [emailError, setEmailError] = useState(""); // Initialize emailError state
 
+  /**
+   * Handles the signup form submission.
+   *
+   * @param {React.FormEvent<HTMLFormElement>} e - The form submission event.
+   */
   const handleSignup = async (e) => {
     e.preventDefault();
     console.log("Signing up with", { firstName, lastName, email, password });
     // TODO: Add logic for sanitizing and submitting the form data to AWS Cognito
   };
 
+
+  /**
+   * Validates the password based on length, lowercase, uppercase, and number criteria.
+   *
+   * @param {string} password - The password to validate.
+   */
   const validatePassword = (password) => {
     const length = password.length >= 8 && password.length <= 64;
     const lower = /[a-z]/.test(password);
@@ -33,17 +61,33 @@ export default function SignupPage() {
     setPasswordValid({ length, lower, upper, number });
   };
 
+  /**
+   * Handles password input change and validates the password.
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} e - The input change event.
+   */
   const handlePasswordChange = (e) => {
     const newPassword = e.target.value;
     setPassword(newPassword);
     validatePassword(newPassword);
   };
 
+  /**
+   * Validates the name based on the regex pattern. The name can contain letters, apostrophes, and hyphens. The name can
+   * be up to 64 characters long.
+   *
+   * @param {string} name - The name to validate.
+   */
   const validateName = (name) => {
     const regex = /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/; // Allow letters and apostrophes, up to 64 characters
     return regex.test(name);
   };
 
+  /**
+   * Handles first name input change and validates the first name.
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} e - The input change event.
+   */
   const handleFirstNameChange = (e) => {
     const newFirstName = e.target.value;
 
@@ -58,6 +102,11 @@ export default function SignupPage() {
     }
   };
 
+  /**
+   * Handles last name input change and validates the last name.
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} e - The input change event.
+   */
   const handleLastNameChange = (e) => {
     const newLastName = e.target.value;
 
@@ -71,6 +120,11 @@ export default function SignupPage() {
       setNameError((prev) => ({ ...prev, lastName: "The following characters are allowed: A-Z, a-z, À-Ö, Ø-ö, ø-ÿ, ', -. Maximum 64 characters." }));    }
   };
 
+  /**
+   * Validates the email based on the regex pattern, checks for role-based emails, and checks for email uniqueness.
+   *
+   * @param {string} email - The email to validate.
+   */
   const validateEmail = async (email) => {
     // If blank, return false
     if (!email) {
@@ -111,17 +165,33 @@ export default function SignupPage() {
     return true;
   };
 
+  /**
+   * Checks if the email is a disposable email address using the Disposable Email API.
+   *
+   * @param {string} email - The email to check.
+   */
   const checkDisposableEmail = async (email) => {
+    // TODO: Fix this. The API is not working.
     const response = await fetch(`https://disposable-email-api.com/api/v1/check/${email}`);
     const data = await response.json();
     return data.isDisposable;
   };
 
+  /**
+   * Checks if the email is unique in the database.
+   *
+   * @param {string} email - The email to check.
+   */
   const checkEmailUniqueness = async (email) => {
     // TODO: Add API call to check email uniqueness after implementing with AWS.
     return true; // Placeholder for actual API call
   };
 
+  /**
+   * Handles email input change and validates the email.
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} e - The input change event.
+   */
   const handleEmailChange = async (e) => {
     const newEmail = e.target.value;
     setEmail(newEmail);

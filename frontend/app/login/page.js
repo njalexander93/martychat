@@ -1,14 +1,36 @@
+/**
+ * @fileoverview Login page component for the MartyChat application.
+ * This file defines the login page, including form handling and validation.
+ *
+ * @author Nikolai Alexander
+ * @email njalexander93@gmail.com
+ * @version 1.0.0
+ * @date TBD
+ * @license Proprietary
+ * @copyright Copyright (c) 2025 MartyChat
+ */
+
 "use client";  // Required for using useEffect in the Next.js App Router
 
 import { useState } from "react";
 import Link from "next/link";
 import AuthenticationForm from "../../components/authentication_layout";
 
+/**
+ * Login page component.
+ *
+ * @returns {React.Element} The rendered login page component.
+ */
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
 
+  /**
+   * Handles the login form submission.
+   *
+   * @param {React.FormEvent<HTMLFormElement>} e - The form submission event.
+   */
   const handleLogin = async (e) => {
     e.preventDefault();
 

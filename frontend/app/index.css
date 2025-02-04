@@ -1,20 +1,33 @@
-.link {
+/**
+ * @fileoverview Global CSS styles for the MartyChat application.
+ * This file contains styles specific to the index page, including link styles and authentication link styles.
+ *
+ * @author Nikolai Alexander
+ * @email njalexander93@gmail.com
+ * @version 1.0.0
+ * @date TBD
+ * @license Proprietary
+ * @copyright Copyright (c) 2025 MartyChat
+ */
+
+  /* Styles for link elements */
+ .link {
     color: rgba(0, 0, 0, 0.6); /* Faded text color */
     transition: color 0.3s ease, transform 0.3s ease; /* Smooth transition for color and transform */
     position: relative; /* Required for the underline effect */
-    font-size: 20px;
+    font-size: 20px; /* Font size for the link */
     font-weight: 400; /* Normal text */
   }
 
   .link::after {
-    content: '';
-    position: absolute;
-    display: block;
-    width: 0;
-    height: 2px;
-    bottom: -2px;
-    left: 0;
-    background-color: currentColor;
+    content: ''; /* Required for the underline effect */
+    position: absolute; /* Required for the underline effect */
+    display: block; /* Required for the underline effect */
+    width: 0; /* Start with no underline */
+    height: 2px; /* Thickness of the underline */
+    bottom: -2px; /* Position the underline inside the border */
+    left: 0; /* Start the underline from the left */
+    background-color: currentColor; /* Color of the underline */
     transition: width 0.5s ease; /* Smooth transition for the underline */
   }
 
@@ -31,12 +44,9 @@
     transform: scale(0.93); /* Slightly shrink the text */
   }
 
+  /* Styles for the login link */
   #link-login {
-    /* background-color: blue; */
-    color: rgba(99, 9, 23, 1);
-    /* padding: 0.5rem 1rem;
-    border-radius: 9999px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); */
+    color: rgba(99, 9, 23, 1); /* Text color for the login link */
   }
 
   #link-login:hover {
@@ -44,22 +54,22 @@
   }
 
   #link-signup {
-    background-color: rgba(99, 9, 23, 1);
-    color: rgba(223, 223, 223, 0.8);
-    padding: 0.5rem 1rem;
-    position: relative;
-    border-radius: 19px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    background-color: rgba(99, 9, 23, 1); /* Background color for the signup link */
+    color: rgba(223, 223, 223, 0.8); /* Text color for the signup link */
+    padding: 0.5rem 1rem; /* Padding for the signup link */
+    position: relative; /* Positioning context for the signup link */
+    border-radius: 19px; /* Rounded corners for the signup link */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* Box shadow for the signup link */
   }
 
   #link-signup::after {
     bottom: 0.4rem; /* Position the underline inside the border */
     left: 0; /* Center the underline */
     right: 0; /* Center the underline */
-    margin-left: 1rem;
-    margin-right: 1rem;
-    width: 0;
-    box-shadow: 0.05 4.05px 6.05px rgba(0, 0, 0, 2);
+    margin-left: 1rem; /* Add space between the underline and the text */
+    margin-right: 1rem; /* Add space between the underline and the text */
+    width: 0; /* Start with no underline */
+    box-shadow: 0.05 4.05px 6.05px rgba(0, 0, 0, 2); /* Slightly offset the shadow */
 
   }
 
