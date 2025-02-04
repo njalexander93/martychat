@@ -1,8 +1,8 @@
 "use client";  // Required for using useEffect in the Next.js App Router
 
-import './signup.css'
-
 import { useState } from "react";
+import Link from "next/link";
+import AuthenticationForm from "../../components/authentication_layout";
 import sanitizeHtml from "sanitize-html";
 
 export default function SignupPage() {
@@ -129,82 +129,82 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="h-screen bg-gradient-to-r from-gray-700 to-gray-300 flex items-center justify-center">
-      <div className="flex flex-col items-center">
-        <img src="/assets/MartyChat_Full-833x200.png" alt="MartyChat Logo" className="mb-6 w-1/2" />
-        <div id="signup-form" className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-          <h1 className="text-2xl font-bold mb-6 text-center text-gray-300">Create a new account.</h1>
-          <form onSubmit={handleSignup}>
-            <div className="flex space-x-4 mb-4">
-              <div className="w-1/2">
-                <label htmlFor="firstName" className="block text-sm font-medium signup-label">First Name*</label>
-                <input
-                  type="text"
-                  id="firstName"
-                  value={firstName}
-                  onChange={handleFirstNameChange}
-                  required
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                />
-                {nameError.firstName && <p className="mt-1 text-sm text-red-600">{nameError.firstName}</p>}
-              </div>
-              <div className="w-1/2">
-                <label htmlFor="lastName" className="block text-sm font-medium signup-label">Last Name*</label>
-                <input
-                  type="text"
-                  id="lastName"
-                  value={lastName}
-                  onChange={handleLastNameChange}
-                  required
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                />
-                {nameError.lastName && <p className="mt-1 text-sm text-red-600">{nameError.lastName}</p>}
-              </div>
-            </div>
-            <div className="mb-4">
-              <label htmlFor="email" className="block text-sm font-medium signup-label">Email*</label>
-              <input
-                type="email"
-                id="email"
-                value={email}
-                onChange={handleEmailChange}
-                required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              />
-              {emailError && <p className="mt-1 text-sm text-red-600">{emailError}</p>}
-            </div>
-            <div className="mb-6">
-              <label htmlFor="password" className="block text-sm font-medium signup-label">Password*</label>
-              <input
-                type="password"
-                id="password"
-                value={password}
-                onChange={handlePasswordChange}
-                required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              />
-              <p className="mt-2 text-sm text-gray-600">Your password must contain:</p>
-              <ul className="mt-2 text-sm text-gray-600 pl-2">
-                <li className={passwordValid.length ? "text-green-600" : "text-red-600"}>
-                  {passwordValid.length ? "✔" : "✘"} Minimum 8 characters, Maximum 64 characters
-                </li>
-                <li className={passwordValid.lower ? "text-green-600" : "text-red-600"}>
-                  {passwordValid.lower ? "✔" : "✘"} At least one lowercase letter
-                </li>
-                <li className={passwordValid.upper ? "text-green-600" : "text-red-600"}>
-                  {passwordValid.upper ? "✔" : "✘"} At least one uppercase letter
-                </li>
-                <li className={passwordValid.number ? "text-green-600" : "text-red-600"}>
-                  {passwordValid.number ? "✔" : "✘"} At least one number
-                </li>
-              </ul>
-            </div>
-            <button type="submit" id="submit-button" className="w-full py-2 px-4 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2">
-              Sign Up
-            </button>
-          </form>
+    <AuthenticationForm>
+      <h1 className="text-2xl font-bold mb-6 text-center text-gray-300">Create a new account.</h1>
+      <form onSubmit={handleSignup}>
+        <div className="flex space-x-4 mb-4">
+          <div className="w-1/2">
+            <label htmlFor="firstName" className="block text-sm font-medium signup-label">First Name*</label>
+            <input
+              type="text"
+              id="firstName"
+              value={firstName}
+              onChange={handleFirstNameChange}
+              required
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            />
+            {nameError.firstName && <p className="mt-1 text-sm text-red-600">{nameError.firstName}</p>}
+          </div>
+          <div className="w-1/2">
+            <label htmlFor="lastName" className="block text-sm font-medium signup-label">Last Name*</label>
+            <input
+              type="text"
+              id="lastName"
+              value={lastName}
+              onChange={handleLastNameChange}
+              required
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            />
+            {nameError.lastName && <p className="mt-1 text-sm text-red-600">{nameError.lastName}</p>}
+          </div>
         </div>
-      </div>
-    </div>
+        <div className="mb-4">
+          <label htmlFor="email" className="block text-sm font-medium signup-label">Email*</label>
+          <input
+            type="email"
+            id="email"
+            value={email}
+            onChange={handleEmailChange}
+            required
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          />
+          {emailError && <p className="mt-1 text-sm text-red-600">{emailError}</p>}
+        </div>
+        <div className="mb-6">
+          <label htmlFor="password" className="block text-sm font-medium signup-label">Password*</label>
+          <input
+            type="password"
+            id="password"
+            value={password}
+            onChange={handlePasswordChange}
+            required
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          />
+          <p className="mt-2 text-sm text-gray-600">Your password must contain:</p>
+          <ul className="mt-2 text-sm text-gray-600 pl-2">
+            <li className={passwordValid.length ? "text-green-600" : "text-red-600"}>
+              {passwordValid.length ? "✔" : "✘"} Minimum 8 characters, Maximum 64 characters
+            </li>
+            <li className={passwordValid.lower ? "text-green-600" : "text-red-600"}>
+              {passwordValid.lower ? "✔" : "✘"} At least one lowercase letter
+            </li>
+            <li className={passwordValid.upper ? "text-green-600" : "text-red-600"}>
+              {passwordValid.upper ? "✔" : "✘"} At least one uppercase letter
+            </li>
+            <li className={passwordValid.number ? "text-green-600" : "text-red-600"}>
+              {passwordValid.number ? "✔" : "✘"} At least one number
+            </li>
+          </ul>
+        </div>
+        <button type="submit" className="w-full py-2 px-4 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 submit-button">
+          Sign Up
+        </button>
+        <div className="mt-4 text-center">
+          <Link href="/login" className="text-sm">
+            Already have an account?
+          </Link>
+        </div>
+      </form>
+    </AuthenticationForm>
   );
 }
