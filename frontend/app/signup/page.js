@@ -21,9 +21,8 @@ export default function SignupPage() {
 
   const handleSignup = async (e) => {
     e.preventDefault();
-    // Handle signup logic here
     console.log("Signing up with", { firstName, lastName, email, password });
-    // You can add API call to register the user
+    // TODO: Add logic for sanitizing and submitting the form data to AWS Cognito
   };
 
   const validatePassword = (password) => {
