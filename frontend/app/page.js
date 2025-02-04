@@ -24,6 +24,7 @@ export default function Home() {
   return (
     <div className="h-screen bg-gradient-to-r from-gray-700 to-gray-300 flex items-center justify-center">
         <div id="content" className="p-4">
+            {/* TODO: Make the logo a link back to the front page. */}
             <img src="/assets/MartyChat_Full-833x200.png" alt="MartyChat Logo" className="unselectable"/>
             <div className="mt-4 space-x-10 flex items-center justify-center">
             <Link id="link-login" href="/login" className="inline-block link" style={{ fontFamily: 'var(--font-roboto-slab)'}}>
