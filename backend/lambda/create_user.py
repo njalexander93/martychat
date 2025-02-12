@@ -173,7 +173,7 @@ def lambda_handler(event, context):
             "password": body.get("password", "").strip(),
             "first_name": body.get("firstName", "").strip(),
             "last_name": body.get("lastName", "").strip(),
-            "organization": body.get("organization", "N/A").strip(),
+            "organization": body.get("organization", "").strip() or "N/A",
             "created_at": datetime.datetime.now().isoformat(),
             "last_login": datetime.datetime.now().isoformat()
         }
@@ -193,11 +193,11 @@ def lambda_handler(event, context):
             signup_parameters["user_id"] = create_cognito_user(signup_parameters)
         except RuntimeError as e:
             if "User already exists." in str(e):
-                logger.error("User already exists in Cognito.")
+                logger.error("User already exists.")
                 return {
                     "statusCode": 400,
                     "headers": CORS_HEADERS,
-                    "body": json.dumps({"error": "User already exists in Cognito."})
+                    "body": json.dumps({"error": "User already exists."})
                 }
             logger.exception("Error creating user in Cognito.")
             return {

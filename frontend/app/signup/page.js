@@ -13,6 +13,7 @@
 "use client";  // Required for using useEffect in the Next.js App Router
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AuthenticationForm from "../../components/authentication_layout";
 import sanitizeHtml from "sanitize-html";
@@ -36,6 +37,9 @@ export default function SignupPage() {
   });
   const [nameError, setNameError] = useState({ firstName: "", lastName: "" });
   const [emailError, setEmailError] = useState(""); // Initialize emailError state
+  const [signupError, setSignupError] = useState(""); // Initialize signupError state
+
+  const router = useRouter();
 
   /**
    * Handles the signup form submission.
@@ -72,17 +76,19 @@ export default function SignupPage() {
       if (!response.ok) {
         const errorData = await response.json();
         console.error("Error creating user:", errorData);
-        alert('Signup failed. ${ errorData.message|| "Uknown error"}');
+        setSignupError(errorData.error || "Unknown error");
         return;
       }
 
       const responseData = await response.json();
       console.log("User created successfully:", responseData);
-      alert("User created successfully. Please check your email for a verification link.");
+      // alert("User created successfully. Please check your email for a verification link.");
+      setSignupError("");
+      router.push("/login");
     }
     catch (error) {
       console.error("Error creating user:", error);
-      alert("Signup failed. Please try again later.");
+      setSignupError("Signup failed. Please try again later.");
     }
   };
 
@@ -284,7 +290,6 @@ export default function SignupPage() {
             id="organization"
             value={organization}
             onChange={handleOrganizationChange}
-            required
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
           />
         </div>
@@ -329,6 +334,9 @@ export default function SignupPage() {
         <button type="submit" className="w-full py-2 px-4 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 submit-button">
           Sign Up
         </button>
+        <div className="mt-4 text-center">
+          {signupError && <p className="mt-2 text-sm text-red-600">{signupError}</p>} {/* Display the signup error message */}
+        </div>
         <div className="mt-4 text-center">
           <Link href="/login" className="text-sm">
             Already have an account?
