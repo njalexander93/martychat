@@ -48,14 +48,14 @@ export default function SignupPage() {
    */
   const handleSignup = async (e) => {
     e.preventDefault();
-    console.log("Signing up with", { firstName, lastName, email, password });
-    // TODO: Add logic for sanitizing and submitting the form data to AWS Cognito
-    console.log("LAMBDA URL:", process.env.NEXT_PUBLIC_LAMBDA_URL);
+
+    // Sanitize the user input
     const sanitizedFirstName = sanitizeHtml(firstName);
     const sanitizedLastName = sanitizeHtml(lastName);
     const sanitizedEmail = sanitizeHtml(email);
     const sanitizedOrganization = sanitizeHtml(organization);
 
+    // Add user input to a json format
     const signupData = {
       email: sanitizedEmail,
       password: password,
@@ -64,7 +64,9 @@ export default function SignupPage() {
       organization: sanitizedOrganization
     };
 
+
     try {
+      // Create a new user in Cognito and DynamoDB with the create-user Lambda function.
       const response = await fetch(`${process.env.NEXT_PUBLIC_LAMBDA_URL}/create-user`, {
         method: "POST",
         headers: {
@@ -84,7 +86,7 @@ export default function SignupPage() {
       console.log("User created successfully:", responseData);
       // alert("User created successfully. Please check your email for a verification link.");
       setSignupError("");
-      router.push("/login");
+      router.push("/login"); // Redirect to the login page
     }
     catch (error) {
       console.error("Error creating user:", error);
