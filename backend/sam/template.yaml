@@ -1,0 +1,58 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: MartyChat Lambda Functions for Local Development
+
+# Globals section defines the default values for all Lambda functions in this template
+Globals:
+  Function: # Default properties for all functions in this template
+    Timeout: 10 # Default timeout for all functions in this template
+    MemorySize: 256 # Default memory size for all functions in this template
+    Runtime: python3.12 # Default runtime for all functions in this template
+    Environment:
+      Variables:
+        NEXT_PUBLIC_FRONTEND_URL: "http://localhost:3000"
+        NEXT_PUBLIC_API_URL: "http://localhost:8000"
+        NEXT_PUBLIC_LAMBDA_URL: "http://localhost:9000"
+        REGION_NAME: "us-east-1"
+        COGNITO_USER_PARAM: "/martychat/dev/cognito_user_pool_id"
+  Api: # Default properties for all APIs in this template
+    Cors:
+      AllowMethods: "'OPTIONS,GET,POST,PUT,PATCH,DELETE'"
+      AllowHeaders: "'Content-Type,Authorization,X-Requested-With'"
+      AllowOrigin: "'*'"
+      AllowCredentials: "'true'"
+
+Resources:
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: "MartyChatAPI"
+      StageName: "dev"
+      Cors:
+        AllowMethods: "'OPTIONS,POST,GET'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: "'*'"
+      GatewayResponses:
+        DEFAULT_4XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'*'"
+              Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              Access-Control-Allow-Methods: "'OPTIONS,POST,GET'"
+
+  # Function for creating a new user in AWS Cognito for the MartyChat application.
+  CreateUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: create_user.lambda_handler
+      CodeUri: ../lambda/
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Events:
+        CreateUserApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: "/{proxy+}"  # Allows handling of all API routes dynamically
+            Method: ANY  # Supports OPTIONS, GET, POST, PUT, DELETE

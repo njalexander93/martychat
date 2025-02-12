@@ -5,7 +5,7 @@
  * @author Nikolai Alexander
  * @email njalexander93@gmail.com
  * @version 1.0.0
- * @date TBD
+ * @date 2025-02-04
  * @license Proprietary
  * @copyright Copyright (c) 2025 MartyChat
  */

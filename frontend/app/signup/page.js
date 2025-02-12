@@ -5,7 +5,7 @@
  * @author Nikolai Alexander
  * @email njalexander93@gmail.com
  * @version 1.0.0
- * @date TBD
+ * @date 2025-02-04
  * @license Proprietary
  * @copyright Copyright (c) 2025 MartyChat
  */
@@ -25,6 +25,7 @@ import sanitizeHtml from "sanitize-html";
 export default function SignupPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [organization, setOrganization] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordValid, setPasswordValid] = useState({
@@ -45,6 +46,44 @@ export default function SignupPage() {
     e.preventDefault();
     console.log("Signing up with", { firstName, lastName, email, password });
     // TODO: Add logic for sanitizing and submitting the form data to AWS Cognito
+    console.log("LAMBDA URL:", process.env.NEXT_PUBLIC_LAMBDA_URL);
+    const sanitizedFirstName = sanitizeHtml(firstName);
+    const sanitizedLastName = sanitizeHtml(lastName);
+    const sanitizedEmail = sanitizeHtml(email);
+    const sanitizedOrganization = sanitizeHtml(organization);
+
+    const signupData = {
+      email: sanitizedEmail,
+      password: password,
+      firstName: sanitizedFirstName,
+      lastName: sanitizedLastName,
+      organization: sanitizedOrganization
+    };
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_LAMBDA_URL}/create-user`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(signupData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Error creating user:", errorData);
+        alert('Signup failed. ${ errorData.message|| "Uknown error"}');
+        return;
+      }
+
+      const responseData = await response.json();
+      console.log("User created successfully:", responseData);
+      alert("User created successfully. Please check your email for a verification link.");
+    }
+    catch (error) {
+      console.error("Error creating user:", error);
+      alert("Signup failed. Please try again later.");
+    }
   };
 
 
@@ -118,6 +157,16 @@ export default function SignupPage() {
       setNameError((prev) => ({ ...prev, lastName: "" }));
     } else {
       setNameError((prev) => ({ ...prev, lastName: "The following characters are allowed: A-Z, a-z, À-Ö, Ø-ö, ø-ÿ, ', -. Maximum 64 characters." }));    }
+  };
+
+  /**
+   * Handles organization input change.
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} e - The input change event.
+    */
+  const handleOrganizationChange = (e) => {
+    const newOrganization = e.target.value;
+    setOrganization(newOrganization);
   };
 
   /**
@@ -227,6 +276,17 @@ export default function SignupPage() {
             />
             {nameError.lastName && <p className="mt-1 text-sm text-red-600">{nameError.lastName}</p>}
           </div>
+        </div>
+        <div className="mb-4">
+          <label htmlFor="organization" className="block text-sm font-medium signup-label">Organization</label>
+          <input
+            type="text"
+            id="organization"
+            value={organization}
+            onChange={handleOrganizationChange}
+            required
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          />
         </div>
         <div className="mb-4">
           <label htmlFor="email" className="block text-sm font-medium signup-label">Email*</label>
