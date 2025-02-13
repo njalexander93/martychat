@@ -52,7 +52,6 @@ function isRateLimited(ip) {
  * @returns {Response} The response object.
  */
 export async function OPTIONS(request) {
-    console.log("Handling OPTIONS request"); // DEBUG DEBUG DEBUG
     return new Response(null, {
         status: 204,
         headers: CORS_HEADERS
@@ -66,11 +65,6 @@ export async function OPTIONS(request) {
  * @returns {Response} The response object.
  */
 export async function POST(request) {
-    // DEBUG DEBUG DEBUG
-    console.log("Handling POST request");
-    console.log("Request headers:", Object.fromEntries(request.headers));
-    // DEBUG DEBUG DEBUG
-
     try {
         // Check the rate limit
         const ip = request.headers.get("CF-Connecting-IP") || request.headers.get("X-Forwarded-For") || "unknown";
@@ -88,8 +82,6 @@ export async function POST(request) {
 
         // Parse the request body for the signup data
         const { email, password, firstName, lastName, organization} = await request.json();
-        // DEBUG DEBUG DEBUG
-        console.log("Request body:", { email, password, firstName, lastName, organization });
 
         // Validate required fields
         if (!email || !password || !firstName || !lastName) {
@@ -110,7 +102,6 @@ export async function POST(request) {
 
         // Create a new user in Cognito and DynamoDB with the create-user Lambda function.
         const lambdaUrl = `${process.env.NEXT_PUBLIC_LAMBDA_URL}/api/auth/signup`;
-        console.log("Lambda URL:", lambdaUrl); // DEBUG DEBUG DEBUG
         const response = await fetch(lambdaUrl, {
             method: "POST",
             headers: {
@@ -130,9 +121,7 @@ export async function POST(request) {
             }),
         });
 
-        console.log("Lambda response status:", response.status); // DEBUG DEBUG DEBUG
         const data = await response.json();
-        console.log("Lambda response data:", data); // DEBUG DEBUG DEBUG
 
         if (!response.ok) {
             if (response.status === 403) {

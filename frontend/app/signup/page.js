@@ -47,14 +47,6 @@ export default function SignupPage() {
    * @param {React.FormEvent<HTMLFormElement>} e - The form submission event.
    */
   const handleSignup = async (e) => {
-    // DEBUG DEBUG DEBUG
-    console.log("Environment variables:", {
-        FRONTEND_URL: process.env.NEXT_PUBLIC_FRONTEND_URL,
-        API_URL: process.env.NEXT_PUBLIC_API_URL,
-        LAMBDA_URL: process.env.NEXT_PUBLIC_LAMBDA_URL
-    });
-    // DEBUG DEBUG DEBUG
-
     e.preventDefault();
 
     // Sanitize the user input
@@ -72,28 +64,8 @@ export default function SignupPage() {
       organization: sanitizedOrganization
     };
 
-    // DEBUG DEBUG DEBUG
-    console.log("Frontend URL:", process.env.NEXT_PUBLIC_FRONTEND_URL);
-    console.log("Attempting signup with data:", {
-        ...signupData,
-        password: '[REDACTED]'
-    });
-
-    // First try an OPTIONS request to check CORS
-    const optionsResponse = await fetch("/api/auth/signup", {
-        method: "OPTIONS",
-        headers: {
-            "Content-Type": "application/json",
-        }
-    });
-
-    console.log("OPTIONS response status:", optionsResponse.status);
-    console.log("OPTIONS response headers:", Object.fromEntries(optionsResponse.headers));
-    // DEBUG DEBUG DEBUG
-
     try {
       // Create a new user in Cognito and DynamoDB with the create-user Lambda function.
-      console.log("Attempting to create user:", signupData); // DEBUG DEBUG DEBUG
       const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: {
@@ -101,11 +73,6 @@ export default function SignupPage() {
         },
         body: JSON.stringify(signupData),
       });
-
-      // DEBUG DEBUG DEBUG
-      console.log("POST response status:", response.status);
-      console.log("POST response headers:", Object.fromEntries(response.headers));
-      // DEBUG DEBUG DEBUG
 
       if (!response.ok) {
         const errorData = await response.json();
