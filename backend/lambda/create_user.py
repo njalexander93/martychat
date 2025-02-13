@@ -58,6 +58,28 @@ def get_user_pool_id() -> str:
 
     return cognito_user_pool_id
 
+def get_client_id() -> str:
+    """Retrieve the AWS Cognito App Client ID from AWS Systems Manager Parameter Store.
+
+    Returns:
+        str: The AWS Cognito App Client ID.
+    """
+    session = boto3.session.Session()
+    ssm = session.client("ssm")  # Client for AWS Systems Manager Parameter Store
+
+    cognito_client_param = os.getenv("COGNITO_CLIENT_PARAM")
+    if not cognito_client_param:
+        logger.error("COGNITO_CLIENT_PARAM environment variable is not set.")
+        raise RuntimeError("COGNITO_CLIENT_PARAM environment variable is not set.")
+
+    try:
+        cognito_client_id = ssm.get_parameter(Name=cognito_client_param, WithDecryption=True)["Parameter"]["Value"]
+    except Exception as e:
+        logger.exception("Error getting Cognito Client ID from AWS Systems Manager Parameter Store.")
+        raise RuntimeError("Error getting Cognito Client ID from AWS Systems Manager Parameter Store.") from e
+
+    return cognito_client_id
+
 def create_cognito_user(signup_parameters: dict) -> str:
     """Create a new user in the AWS Cognito user pool.
 

@@ -1,9 +1,7 @@
 # Ignore Python virtual environments
 venv/
 .venv/
-.env
 .env.local
-.env*
 *.pyc
 *.pyo
 *.pyd
@@ -50,8 +48,6 @@ out/
 build/
 
 # Ignore production artifacts
-frontend/.env.local
-frontend/.env*
 .vercel
 
 # Ignore debug logs

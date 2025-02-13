@@ -29,7 +29,6 @@ export default function Home() {
     // Fetch the API URL from the environment variables
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-
     // Fetch the backend status message
     fetch(apiUrl)
       .then((res) => res.json())
