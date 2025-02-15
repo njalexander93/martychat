@@ -1,0 +1,21 @@
+{
+    "Users": [
+        {
+            "Username": "34e8b4c8-0051-7048-bebc-e9001bb99dbc",
+            "Attributes": [
+                {
+                    "Name": "email",
+                    "Value": "ne3ko93@gmail.com"
+                },
+                {
+                    "Name": "sub",
+                    "Value": "34e8b4c8-0051-7048-bebc-e9001bb99dbc"
+                }
+            ],
+            "UserCreateDate": "2025-02-12T04:58:33.514000+00:00",
+            "UserLastModifiedDate": "2025-02-12T04:58:34.003000+00:00",
+            "Enabled": true,
+            "UserStatus": "CONFIRMED"
+        }
+    ]
+}

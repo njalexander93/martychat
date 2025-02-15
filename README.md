@@ -27,6 +27,7 @@ MartyChat consists of:
 - **Node.js** (version 14.x or later)
 - **Python** (version 3.12.3)
 - **git**
+- **AWS Account** with necessary permissions to access AWS services
 
 ## 🛠️ Setup Instructions
 
@@ -36,7 +37,80 @@ git clone https://github.com/\<your_username\>/martychat.git
 cd martychat
 ```
 
-### 2️⃣ Set Up Backend (FastAPI)
+###
+
+### 2️⃣ AWS API Setup
+
+#### AWS CLI Setup
+*Note*: If you do not have an AWS account associated with this project, please reach out to admin@martychat.com to get an account.
+
+To access the AWS API, you need to set up your AWS crendentials. Follow these steps:
+1. Install the AWS CLI.
+```sh
+pip install awscli
+```
+2. Configure AWS CLI
+```sh
+aws configure
+```
+
+3. You will be prompted to enter your AWS Access Key ID, Secret Access Key, region, and output format.
+```sh
+AWS Access Key ID: <access_key_id>
+AWS Secret Access Key: <secret_access_key>
+Default region name: <region_of_the_application>
+Default output format: json
+```
+
+4. Check your AWS identity to confirm the account has been connected to the CLI
+```sh
+aws sts get-caller-identity
+```
+Expected output:
+```sh
+{
+    "UserId": "XXXXXXXXXXXXXXXXXXX",
+    "Account": "123456789012",
+    "Arn": "arn:aws:iam::123456789012:user/YourUserName"
+}
+```
+
+#### Setup AWS SAM (for local development)
+MartyChat's backend supports local development of AWS Lambda functions using AWS Serverless Application Model (AWS SAM).
+The user can use this to test lambda functions on their local system
+
+1. Ensure you have AWS SAM CLI installed:
+```sh
+wget https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-linux-x86_64.zip
+unzip aws-sam-cli-linux-x86_64.zip -d sam-installation
+sudo ./sam-installation/install
+sam --version
+```
+
+2. Ensure you have Docker installed:
+```sh
+sudo apt update
+sudo apt install docker.io -y
+sudo usermod -aG docker $USER
+newgrp docker
+```
+
+3. Build the SAM application
+```sh
+cd backend/sam
+sam build
+```
+
+4. Start the local API:
+```sh
+sam local start-api
+```
+Your lambda function will be accessible at `http://127.0.0.1:3000/<lambda-function>`. To invoke a lambda function manually use,
+```sh
+sam local invoke <Lambda Function in sam/template.yaml>
+```
+
+### 3️⃣ Set Up Backend (FastAPI)
 #### Install Python Dependencies
 ```sh
 python3 -m venv venv
@@ -53,7 +127,7 @@ uvicorn backend.main:app --reload
 ```
 - The API will be available at **http://127.0.0.1:8000/**.
 
-### 3️⃣ Set Up Frontend (Next.js)
+### 4️⃣ Set Up Frontend (Next.js)
 #### Install Node.js & Dependencies
 Make sure Node.js is installed, then run:
 ```sh
@@ -63,7 +137,7 @@ npm run dev
 ```
 - The frontend will be available at **http://localhost:3000/**.
 
-### 4️⃣ Rebuild for Production (if needed)
+### 5️⃣ Rebuild for Production (if needed)
 ```sh
 npm run build
 ```
