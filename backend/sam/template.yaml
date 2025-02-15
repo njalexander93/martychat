@@ -14,8 +14,12 @@ Globals:
         NEXT_PUBLIC_API_URL: "http://localhost:8000"
         NEXT_PUBLIC_LAMBDA_URL: "http://localhost:9000"
         REGION_NAME: "us-east-1"
+        API_SECRETS_PARAM: "/martychat/secrets/api_keys"
+        PINECONE_ENV_PARAM: "/marty/pinecone/env"
+        PINECONE_INDEX_PARAM: "/marty/pinecone/index"
         COGNITO_USER_PARAM: "/martychat/dev/cognito_user_pool_id"
         COGNITO_CLIENT_PARAM: "/martychat/dev/cognito_app_client_id"
+        INFRA_SECRETS_PARAM: "/martychat/secrets/infrastructure_keys_dev"
   Api:
     Auth:
       DefaultAuthorizer: NONE  # Allow unauthenticated access

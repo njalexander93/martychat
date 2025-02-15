@@ -52,8 +52,8 @@ export default function MartyChat() {
   };
 
   return (
-    <div className="chat-container">
-      {/* Chat UI Code */}
+    <div>
+        <h1>Welcome to Marty</h1>
     </div>
   );
 }

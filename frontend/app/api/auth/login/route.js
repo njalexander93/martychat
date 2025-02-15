@@ -1,6 +1,6 @@
 /**
- * @fileoverview Signup API endpoint for the MartyChat application.
- * This file defines the API endpoint for user signup.
+ * @fileoverview Login API endpoint for the MartyChat application.
+ * This file defines the API endpoint for user login functionality.
  *
  * @author Nikolai Alexander
  * @email njalexander93@gmail.com
@@ -46,7 +46,7 @@ function isRateLimited(ip) {
 }
 
 /**
- * OPTIONS handler for the signup API endpoint.
+ * OPTIONS handler for the login API endpoint.
  *
  * @param {Request} request The incoming request object.
  * @returns {Response} The response object.
@@ -59,7 +59,7 @@ export async function OPTIONS(request) {
 }
 
 /**
- * POST handler for the signup API endpoint.
+ * POST handler for the login API endpoint.
  *
  * @param {Request} request The incoming request object.
  * @returns {Response} The response object.
@@ -73,33 +73,34 @@ export async function POST(request) {
                 status: 429,
                 headers: {
                     ...CORS_HEADERS,
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
                 }
-              });
+            });
         }
 
         // Parse the request body for the signup data
-        const { email, password, firstName, lastName, organization} = await request.json();
+        const { email, password } = await request.json();
 
-        // Validate required fields
-        if (!email || !password || !firstName || !lastName) {
-            return new Response(JSON.stringify({ error: "All required fields must be filled." }), {
+        // Validate that the user put in an email and password.
+        if (!email || !password) {
+            return new Response(JSON.stringify({ error: "Email and password are required." }), {
                 status: 400,
                 headers: CORS_HEADERS
-              });
+            });
         }
 
         // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
-            return new Response(JSON.stringify({ error: "Invalid email format." }), {
+            return new Response(JSON.stringify({ error: "Invalid email." }), {
                 status: 400,
                 headers: CORS_HEADERS
-              });
+            });
         }
 
         // Create a new user in Cognito and DynamoDB with the create-user Lambda function.
-        const lambdaUrl = `${process.env.NEXT_PUBLIC_LAMBDA_URL}/api/auth/signup`;
+        const lambdaUrl = `${process.env.NEXT_PUBLIC_LAMBDA_URL}/api/auth/login`;
+        console.log("Calling login Lambda function:", lambdaUrl);
         const response = await fetch(lambdaUrl, {
             method: "POST",
             headers: {
@@ -110,13 +111,7 @@ export async function POST(request) {
                     // TODO: Add production-specific headers to call remote lambda functions
                 })
             },
-            body: JSON.stringify({
-                email,
-                password,
-                firstName,
-                lastName,
-                organization
-            }),
+            body: JSON.stringify({ email, password }),
         });
 
         const data = await response.json();
@@ -129,7 +124,7 @@ export async function POST(request) {
                     headers: CORS_HEADERS
                 });
             }
-            return new Response(JSON.stringify({ error: data.error || "Failed to sign up." }), {
+            return new Response(JSON.stringify({ error: data.error || "Failed to login." }), {
                 status: response.status,
                 headers: CORS_HEADERS
               });

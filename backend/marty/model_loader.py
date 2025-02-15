@@ -94,9 +94,9 @@ class ApiConfig:
         # Get API Keys and Organization ID from AWS Secrets Manager
         logging.info("Getting API keys from AWS Secrets Manager.")
         try:
-            secret_id = ssm.get_parameter(Name="/martychat/secrets/api_keys")["Parameter"]["Value"]
-            openai_api_key = secrets_manager.get_secret_value(SecretId=secret_id)
-            secrets = json.loads(openai_api_key["SecretString"])
+            secret_id = ssm.get_parameter(Name=os.getenv("API_SECRETS_PARAM"))["Parameter"]["Value"]
+            secret_key = secrets_manager.get_secret_value(SecretId=secret_id)
+            secrets = json.loads(secret_key["SecretString"])
 
             openai_api_key = secrets["openai_api_key"]
             openai_org_id = secrets["openai_org_id"]
@@ -109,8 +109,8 @@ class ApiConfig:
         # Get the Pinecone Env and Index Name from AWS Systems Manager Parameter Store
         logging.info("Getting Pinecone environment and index name from AWS Systems Manager Parameter Store.")
         try:
-            pinecone_env = ssm.get_parameter(Name="/marty/pinecone/env")["Parameter"]["Value"]
-            pinecone_index_name = ssm.get_parameter(Name="/marty/pinecone/index")["Parameter"]["Value"]
+            pinecone_env = ssm.get_parameter(Name=os.getenv("PINECONE_ENV_PARAM"))["Parameter"]["Value"]
+            pinecone_index_name = ssm.get_parameter(Name=os.getenv("PINECONE_INDEX_PARAM"))["Parameter"]["Value"]
             logging.info("Pinecone environment and index name retrieved successfully!")
         except Exception as e:
             logging.exception("Error getting parameters from AWS Systems Manager Parameter Store.")
