@@ -146,7 +146,13 @@ export default function Login() {
         <div className="mb-4 text-center">
           {loginError && <p className="mb-2 text-sm text-red-600">{loginError}</p>} {/* Display the signup error message */}
         </div>
-        <button type="submit" className="w-full py-2 px-4 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 submit-button">
+        <button
+          type="submit"
+          className={`w-full py-2 px-4 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 submit-button ${
+            isLoading ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
+          disabled={isLoading}
+        >
           {isLoading ? 'Signing in...' : 'Sign In'}
         </button>
         <div className="text-center mt-4">

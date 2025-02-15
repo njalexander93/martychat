@@ -38,6 +38,7 @@ export default function SignupPage() {
   const [nameError, setNameError] = useState({ firstName: "", lastName: "" });
   const [emailError, setEmailError] = useState(""); // Initialize emailError state
   const [signupError, setSignupError] = useState(""); // Initialize signupError state
+  const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
 
@@ -48,6 +49,8 @@ export default function SignupPage() {
    */
   const handleSignup = async (e) => {
     e.preventDefault();
+    setSignupError("");
+    setIsLoading(true);
 
     // Sanitize the user input
     const sanitizedFirstName = sanitizeHtml(firstName);
@@ -90,6 +93,9 @@ export default function SignupPage() {
     catch (error) {
       console.error("Error creating user:", error);
       setSignupError("Signup failed. Please try again later.");
+    }
+    finally {
+      setIsLoading(false);
     }
   };
 
@@ -268,6 +274,7 @@ export default function SignupPage() {
               onChange={handleFirstNameChange}
               required
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              disabled={isLoading}
             />
             {nameError.firstName && <p className="mt-1 text-sm text-red-600">{nameError.firstName}</p>}
           </div>
@@ -280,6 +287,7 @@ export default function SignupPage() {
               onChange={handleLastNameChange}
               required
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              disabled={isLoading}
             />
             {nameError.lastName && <p className="mt-1 text-sm text-red-600">{nameError.lastName}</p>}
           </div>
@@ -292,6 +300,7 @@ export default function SignupPage() {
             value={organization}
             onChange={handleOrganizationChange}
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            disabled={isLoading}
           />
         </div>
         <div className="mb-4">
@@ -303,6 +312,7 @@ export default function SignupPage() {
             onChange={handleEmailChange}
             required
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            disabled={isLoading}
           />
           {emailError && <p className="mt-1 text-sm text-red-600">{emailError}</p>}
         </div>
@@ -315,6 +325,7 @@ export default function SignupPage() {
             onChange={handlePasswordChange}
             required
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            disabled={isLoading}
           />
           <p className="mt-2 text-sm text-gray-600">Your password must contain:</p>
           <ul className="mt-2 text-sm text-gray-600 pl-2">
@@ -332,8 +343,14 @@ export default function SignupPage() {
             </li>
           </ul>
         </div>
-        <button type="submit" className="w-full py-2 px-4 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 submit-button">
-          Sign Up
+        <button
+          type="submit"
+          className={`w-full py-2 px-4 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 submit-button ${
+            isLoading ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
+          disabled={isLoading}
+        >
+          {isLoading ? 'Creating Account...' : 'Sign Up'}
         </button>
         <div className="mt-4 text-center">
           {signupError && <p className="mt-2 text-sm text-red-600">{signupError}</p>} {/* Display the signup error message */}
