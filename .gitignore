@@ -1,8 +1,7 @@
 # Ignore Python virtual environments
 venv/
-.env
+.venv/
 .env.local
-.env*
 *.pyc
 *.pyo
 *.pyd
@@ -26,9 +25,9 @@ instance/
 .DS_Store
 
 # Ignore Next.js build and dependency files
-frontend/.next/
-frontend/node_modules/
-frontend/.eslintcache
+.next/
+node_modules/
+.eslintcache
 
 # Ignore frontend dependencies
 .pnp
@@ -49,8 +48,6 @@ out/
 build/
 
 # Ignore production artifacts
-frontend/.env.local
-frontend/.env*
 .vercel
 
 # Ignore debug logs
@@ -70,3 +67,20 @@ docker/
 
 # Ignore misc files
 *.pem
+
+# SAM Config
+.aws-sam/
+env.json
+
+# Local AWS and Config Files
+.aws/
+config/
+credentials/
+backend/lambda/requirements.txt
+
+# Terraform and CloudFormation state files
+terraform.tfstate
+terraform.tfstate.backup
+
+# Miscellaneous
+tree.txt

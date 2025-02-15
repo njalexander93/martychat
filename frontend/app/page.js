@@ -5,7 +5,7 @@
  * @author Nikolai Alexander
  * @email njalexander93@gmail.com
  * @version 1.0.0
- * @date TBD
+ * @date 2025-02-04
  * @license Proprietary
  * @copyright Copyright (c) 2025 MartyChat
  */
@@ -26,11 +26,8 @@ export default function Home() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    // Determine the correct API URL based on hostname
-    const apiUrl =
-      typeof window !== "undefined" && window.location.hostname === "localhost"
-        ? "http://127.0.0.1:8000"
-        : "http://0.0.0.0:8000";
+    // Fetch the API URL from the environment variables
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
     // Fetch the backend status message
     fetch(apiUrl)

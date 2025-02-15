@@ -5,7 +5,7 @@
  * @author Nikolai Alexander
  * @email njalexander93@gmail.com
  * @version 1.0.0
- * @date TBD
+ * @date 2025-02-04
  * @license Proprietary
  * @copyright Copyright (c) 2025 MartyChat
  */
@@ -13,6 +13,7 @@
 "use client";  // Required for using useEffect in the Next.js App Router
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AuthenticationForm from "../../components/authentication_layout";
 import sanitizeHtml from "sanitize-html";
@@ -25,6 +26,7 @@ import sanitizeHtml from "sanitize-html";
 export default function SignupPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [organization, setOrganization] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordValid, setPasswordValid] = useState({
@@ -35,6 +37,9 @@ export default function SignupPage() {
   });
   const [nameError, setNameError] = useState({ firstName: "", lastName: "" });
   const [emailError, setEmailError] = useState(""); // Initialize emailError state
+  const [signupError, setSignupError] = useState(""); // Initialize signupError state
+
+  const router = useRouter();
 
   /**
    * Handles the signup form submission.
@@ -43,8 +48,49 @@ export default function SignupPage() {
    */
   const handleSignup = async (e) => {
     e.preventDefault();
-    console.log("Signing up with", { firstName, lastName, email, password });
-    // TODO: Add logic for sanitizing and submitting the form data to AWS Cognito
+
+    // Sanitize the user input
+    const sanitizedFirstName = sanitizeHtml(firstName);
+    const sanitizedLastName = sanitizeHtml(lastName);
+    const sanitizedEmail = sanitizeHtml(email);
+    const sanitizedOrganization = sanitizeHtml(organization);
+
+    // Add user input to a json format
+    const signupData = {
+      email: sanitizedEmail,
+      password: password,
+      firstName: sanitizedFirstName,
+      lastName: sanitizedLastName,
+      organization: sanitizedOrganization
+    };
+
+    try {
+      // Create a new user in Cognito and DynamoDB with the create-user Lambda function.
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(signupData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Error creating user:", errorData);
+        setSignupError(errorData.error || "Unknown error");
+        return;
+      }
+
+      const responseData = await response.json();
+      console.log("User created successfully:", responseData);
+      // alert("User created successfully. Please check your email for a verification link.");
+      setSignupError("");
+      router.push("/login"); // Redirect to the login page
+    }
+    catch (error) {
+      console.error("Error creating user:", error);
+      setSignupError("Signup failed. Please try again later.");
+    }
   };
 
 
@@ -118,6 +164,16 @@ export default function SignupPage() {
       setNameError((prev) => ({ ...prev, lastName: "" }));
     } else {
       setNameError((prev) => ({ ...prev, lastName: "The following characters are allowed: A-Z, a-z, À-Ö, Ø-ö, ø-ÿ, ', -. Maximum 64 characters." }));    }
+  };
+
+  /**
+   * Handles organization input change.
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} e - The input change event.
+    */
+  const handleOrganizationChange = (e) => {
+    const newOrganization = e.target.value;
+    setOrganization(newOrganization);
   };
 
   /**
@@ -229,6 +285,16 @@ export default function SignupPage() {
           </div>
         </div>
         <div className="mb-4">
+          <label htmlFor="organization" className="block text-sm font-medium signup-label">Organization</label>
+          <input
+            type="text"
+            id="organization"
+            value={organization}
+            onChange={handleOrganizationChange}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          />
+        </div>
+        <div className="mb-4">
           <label htmlFor="email" className="block text-sm font-medium signup-label">Email*</label>
           <input
             type="email"
@@ -269,6 +335,9 @@ export default function SignupPage() {
         <button type="submit" className="w-full py-2 px-4 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 submit-button">
           Sign Up
         </button>
+        <div className="mt-4 text-center">
+          {signupError && <p className="mt-2 text-sm text-red-600">{signupError}</p>} {/* Display the signup error message */}
+        </div>
         <div className="mt-4 text-center">
           <Link href="/login" className="text-sm">
             Already have an account?
