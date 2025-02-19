@@ -15,7 +15,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import AuthenticationForm from "../../components/authentication_layout";
+import AuthenticationForm from "@/components/AuthenticationForm";
 import sanitizeHtml from "sanitize-html";
 
 /**
@@ -98,7 +98,6 @@ export default function SignupPage() {
       setIsLoading(false);
     }
   };
-
 
   /**
    * Validates the password based on length, lowercase, uppercase, and number criteria.

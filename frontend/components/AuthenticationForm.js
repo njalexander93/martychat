@@ -19,12 +19,12 @@ import Link from "next/link";
  */
 export default function AuthenticationForm({ children }) {
   return (
-    <div className="h-screen bg-gradient-to-r from-gray-700 to-gray-300 flex items-center justify-center">
+    <div className="h-screen bg-gradient-to-l from-[var(--color-bg-secondary)] from-20% to-[var(--color-bg-dark)] to-100% flex items-center justify-center">
       <div className="flex flex-col items-center">
         <Link href="/" className="mb-6 w-1/2 unselectable">
           <img src="/assets/MartyChat_Full-833x200.png" alt="MartyChat Logo"  />
         </Link>
-        <div id="authentication-form" className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md auth-form-text">
+        <div id="authentication-form"  className="p-8 rounded-lg shadow-lg w-full max-w-md auth-form-text">
             {children}
         </div>
       </div>

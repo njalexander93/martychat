@@ -12,6 +12,7 @@
 
 import { Roboto, Roboto_Slab, Roboto_Flex, Roboto_Mono, Roboto_Serif } from "next/font/google";
 import "./globals.css";
+import { ThemeLoader } from "@/styles/themeLoader";
 import { Metadata } from 'next';
 
 /**
@@ -26,11 +27,14 @@ export const metadata = {
 /**
  * Load Google Fonts: Roboto Flex and Roboto Slab.
  */
-const roboto = Roboto({ variable: "--font-roboto", weight: "300", subsets: ["latin"] });
-const robotoSlab = Roboto_Slab({ variable: "--font-roboto-slab", subsets: ["latin"] });
-const robotoFlex = Roboto_Flex({ variable: "--font-roboto-flex", subsets: ["latin"] });
-const robotoMono = Roboto_Mono({ variable: "--font-roboto-mono", subsets: ["latin"] });
-const robotoSerif = Roboto_Serif({ variable: "--font-roboto-serif", subsets: ["latin"] });
+const roboto = Roboto({ variable: "--font-roboto", weight: "300", subsets: ["latin"], display: "swap"  });
+const robotoSlab = Roboto_Slab({ variable: "--font-roboto-slab", subsets: ["latin"], display: "swap" });
+const robotoFlex = Roboto_Flex({ variable: "--font-roboto-flex", subsets: ["latin"], display: "swap" });
+const robotoMono = Roboto_Mono({ variable: "--font-roboto-mono", subsets: ["latin"], display: "swap" });
+const robotoSerif = Roboto_Serif({ variable: "--font-roboto-serif", subsets: ["latin"], display: "swap" });
+
+// Combine all font variables for body class
+const fontVariables = `${roboto.variable} ${robotoSlab.variable} ${robotoFlex.variable} ${robotoMono.variable} ${robotoSerif.variable}`;
 
 /**
  * Root layout component for the MartyChat application.
@@ -42,7 +46,8 @@ const robotoSerif = Roboto_Serif({ variable: "--font-roboto-serif", subsets: ["l
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${roboto.variable} ${robotoSlab.variable} ${robotoFlex.variable} ${robotoMono.variable} ${robotoSerif.variable} antialiased`}>
+      <body className={`${fontVariables} antialiased bg-bg-primary text-text-primary`}>
+        <ThemeLoader />
         {children}
       </body>
     </html>

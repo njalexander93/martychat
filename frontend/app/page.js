@@ -12,7 +12,7 @@
 
 "use client";  // Required for using useEffect in the Next.js App Router
 
-import './index.css';
+import '@/styles/index.css';
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -24,20 +24,50 @@ import Link from "next/link";
  */
 export default function Home() {
   const [message, setMessage] = useState("");
+  const [backendStatus, setBackendStatus] = useState('checking');
 
   useEffect(() => {
-    // Fetch the API URL from the environment variables
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    const checkBackend = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+        if (!apiUrl) {
+          console.warn('API_URL not configured');
+          setBackendStatus('disconnected');
+          return;
+        }
 
-    // Fetch the backend status message
-    fetch(apiUrl)
-      .then((res) => res.json())
-      .then((data) => setMessage(data.message))
-      .catch((err) => console.error("Error fetching data:", err));
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setMessage(data.message);
+          setBackendStatus('connected');
+        } else {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+      } catch (error) {
+        console.error("Backend connection error:", error);
+        setBackendStatus('disconnected');
+
+        // In development, show a more helpful message
+        if (process.env.NODE_ENV === 'development') {
+          setMessage("Backend not connected. Make sure your FastAPI server is running on localhost:8000");
+        } else {
+          setMessage("Welcome to MartyChat");
+        }
+      }
+    };
+
+    checkBackend();
   }, []);
 
   return (
-    <div className="h-screen bg-gradient-to-r from-gray-700 to-gray-300 flex items-center justify-center">
+    <div className="h-screen bg-gradient-to-l from-bg-secondary from-20% to-bg-dark to-100% flex items-center justify-center">
         <div id="content" className="p-4">
             <img src="/assets/MartyChat_Full-833x200.png" alt="MartyChat Logo" className="unselectable"/>
             <div className="mt-4 space-x-10 flex items-center justify-center">
