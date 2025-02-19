@@ -12,48 +12,31 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import ChatInterface from "@/components/ChatInterface";
+import { martyConfig } from "@/chatbots/marty";
 
-export default function MartyChat() {
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  // Fetch the API URL from the environment variables
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-  const sendMessage = async () => {
-    if (!input.trim()) return;
-
-    setMessages((prev) => [...prev, { role: "user", content: input }]);
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: input, user_id: "anonymous" }),
-      });
-
-      if (!response.ok) throw new Error("Failed to fetch response");
-
-      const data = await response.json();
-      setMessages((prev) => [...prev, { role: "assistant", content: data.response }]);
-
-    } catch (err) {
-      console.error("Error:", err);
-      setError("Server error. Try again later.");
-    } finally {
-      setLoading(false);
-      setInput("");
+/**
+ * The Marty chat interface component.
+ *
+ * @returns {React.Element} The rendered signup page component.
+ */
+export default function MartyPage() {
+  useEffect(() => {
+    // Set a unique user ID for the session. This is used to identify the user across multiple sessions. If the user ID
+    // is not set, generate a new one.
+    const userId = window.sessionStorage.getItem("userId");
+    if (!userId) {
+      window.sessionStorage.setItem("userId", `user_${Date.now().toString()}`);
     }
-  };
+  }, []);
 
   return (
-    <div>
-        <h1>Welcome to Marty</h1>
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-8 font-roboto-slab">Welcome to MartyChat</h1>
+        <ChatInterface {...martyConfig} />
+      </div>
     </div>
-  );
+  )
 }
