@@ -22,21 +22,5 @@ import { martyConfig } from "@/chatbots/marty";
  * @returns {React.Element} The rendered signup page component.
  */
 export default function MartyPage() {
-  useEffect(() => {
-    // Set a unique user ID for the session. This is used to identify the user across multiple sessions. If the user ID
-    // is not set, generate a new one.
-    const userId = window.sessionStorage.getItem("userId");
-    if (!userId) {
-      window.sessionStorage.setItem("userId", `user_${Date.now().toString()}`);
-    }
-  }, []);
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8 font-roboto-slab">Welcome to MartyChat</h1>
-        <ChatInterface {...martyConfig} />
-      </div>
-    </div>
-  )
+  return <ChatInterface {...martyConfig} />
 }

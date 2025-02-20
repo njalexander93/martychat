@@ -24,15 +24,18 @@ const ChatInterface = ({
     welcomeMessage = null,
     maxInputLines = 18,
     theme = {
-        primary: "blue",
-        userMessage: "bg-blue-500 text-white",
-        botMessage: "bg-gray-200 text-gray-800",
-        fonts: {
-            title: "font-roboto-slab",
-            messages: "font-roboto",
-            input: "font-roboto-flex",
-        },
-    },
+      userMessage: 'bg-primary text-text-light',
+      botMessage: 'bg-bg-secondary text-text-primary',
+      fonts: {
+        title: 'font-roboto-slab',
+        messages: 'font-roboto',
+        input: 'font-roboto-flex'
+      },
+      container: {
+        background: 'bg-transparent border-transparent',
+        input: 'bg-transparent border-transparent'
+      }
+    }
 }) => {
     // State for managing messages. The role property determines if the message is from the user or the chatbot.
     const [messages, setMessages] = useState(
@@ -42,6 +45,17 @@ const ChatInterface = ({
     const [loading, setLoading] = useState(false); // State for loading indicator
     const textareaRef = useRef(null); // Ref for textarea to auto-resize
     const chatContainerRef = useRef(null); // Ref for chat container to auto-scroll
+
+
+    // Set a unique user ID for the session. This is used to identify the user across multiple sessions. If the user ID
+    // is not set, generate a new one.
+    useEffect(() => {
+      const userId = window.sessionStorage.getItem("userId");
+      console.log("User ID:", userId);
+      if (!userId) {
+        window.sessionStorage.setItem("userId", `user_${Date.now().toString()}`);
+      }
+    }, []);
 
     // Auto-resize textarea as user types
     useEffect(() => {
@@ -146,73 +160,74 @@ const ChatInterface = ({
     }, [messages]);
 
     return (
-        <div className="flex flex-col h-screen bg-gray-50">
-          {/* Header */}
-          {title && (
-            <div className="p-4 border-b border-gray-200 bg-white">
+      <div className="relative h-screen bg-gradient-to-l from-bg-secondary from-20% to-bg-dark to-100%">
+      {/* Header */}
+      {title && (
+          <div className="p-4">
               <h2 className={`text-xl ${theme.fonts.title}`}>{title}</h2>
-            </div>
-          )}
-
-          {/* Chat container */}
-          <div
-            ref={chatContainerRef}
-            className={`flex-1 overflow-y-auto p-4 space-y-4 ${theme.fonts.messages}`}
-          >
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[80%] rounded-lg p-3 ${
-                    message.role === 'user'
-                      ? theme.userMessage
-                      : theme.botMessage
-                  }`}
-                >
-                  {message.content}
-                </div>
-              </div>
-            ))}
-            {loading && (
-              <div className="flex justify-start">
-                <div className="bg-gray-200 text-gray-800 rounded-lg p-3">
-                  Thinking...
-                </div>
-              </div>
-            )}
           </div>
+      )}
 
-          {/* Input form */}
-          <form
-            onSubmit={handleSubmit}
-            className="border-t border-gray-200 p-4 bg-white"
-          >
-            <div className="flex gap-4">
-              <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder={placeholder}
-                className={`flex-1 min-h-[40px] max-h-[${maxInputLines * 16}px] p-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-${theme.primary}-500 ${theme.fonts.input}`}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSubmit(e);
-                  }
-                }}
-              />
-              <button
-                type="submit"
-                disabled={loading || !input.trim()}
-                className={`px-6 py-2 bg-${theme.primary}-500 text-white rounded-lg hover:bg-${theme.primary}-600 disabled:bg-gray-300 disabled:cursor-not-allowed ${theme.fonts.input}`}
-              >
-                Send
-              </button>
-            </div>
-          </form>
-        </div>
+      {/* Chat Messages Container - Add bottom padding to account for fixed input form */}
+      <div
+          ref={chatContainerRef}
+          className={`h-[calc(100vh-180px)] overflow-y-auto px-4 space-y-4 ${theme.fonts.messages}`}
+      >
+          <div className="max-w-4xl mx-auto space-y-4">
+              {messages.map((message, index) => (
+                  <div
+                      key={index}
+                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                      <div
+                          className={`max-w-[80%] rounded-lg p-3 ${
+                              message.role === 'user'
+                                  ? theme.userMessage
+                                  : theme.botMessage
+                          }`}
+                      >
+                          {message.content}
+                      </div>
+                  </div>
+              ))}
+              {loading && (
+                  <div className="flex justify-start">
+                      <div className="bg-gray-200 text-gray-800 rounded-lg p-3">
+                          Thinking...
+                      </div>
+                  </div>
+              )}
+          </div>
+      </div>
+
+      {/* Input Form - Fixed at Bottom */}
+      <div className="fixed bottom-0 left-0 right-0 bg-opacity-5 backdrop-blur-sm">
+          <div className="max-w-4xl mx-auto p-4">
+              <form onSubmit={handleSubmit} className="flex gap-4">
+                  <textarea
+                      ref={textareaRef}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      placeholder={placeholder}
+                      className={`flex-1 min-h-[40px] max-h-[${maxInputLines * 16}px] p-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary ${theme.fonts.input}`}
+                      onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSubmit(e);
+                          }
+                      }}
+                  />
+                  <button
+                      type="submit"
+                      disabled={loading || !input.trim()}
+                      className={`px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover active:bg-primary-active disabled:bg-bg-primary disabled:cursor-not-allowed ${theme.fonts.input}`}
+                  >
+                      Send
+                  </button>
+              </form>
+          </div>
+      </div>
+  </div>
     )
 };
 
