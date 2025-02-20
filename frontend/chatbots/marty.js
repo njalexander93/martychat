@@ -14,6 +14,6 @@
 export const martyConfig = {
   title: "Marty - Your Psychology Research Assistant",
   endpoint: "/api/v1/marty",
-  placeholder: "Ask me about psychology...",
+  placeholder: "Ask Marty about psychology...",
   welcomeMessage: "Hello! I'm Marty, your psychology research assistant. How can I help you today?"
 };

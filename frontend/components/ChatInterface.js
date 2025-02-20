@@ -24,17 +24,17 @@ const ChatInterface = ({
     welcomeMessage = null,
     maxInputLines = 18,
     theme = {
-      userMessage: 'bg-primary text-text-light',
-      botMessage: 'bg-bg-secondary text-text-primary',
-      fonts: {
-        title: 'font-roboto-slab',
-        messages: 'font-roboto',
-        input: 'font-roboto-flex'
-      },
-      container: {
-        background: 'bg-transparent border-transparent',
-        input: 'bg-transparent border-transparent'
-      }
+        userMessage: 'bg-primary text-text-light',
+        botMessage: 'bg-bg-secondary text-text-primary',
+        fonts: {
+            title: 'font-roboto-slab',
+            messages: 'font-roboto',
+            input: 'font-roboto-flex'
+        },
+        container: {
+            background: 'bg-transparent border-transparent',
+            input: 'bg-transparent border-transparent'
+        }
     }
 }) => {
     // State for managing messages. The role property determines if the message is from the user or the chatbot.
@@ -46,15 +46,14 @@ const ChatInterface = ({
     const textareaRef = useRef(null); // Ref for textarea to auto-resize
     const chatContainerRef = useRef(null); // Ref for chat container to auto-scroll
 
-
     // Set a unique user ID for the session. This is used to identify the user across multiple sessions. If the user ID
     // is not set, generate a new one.
     useEffect(() => {
-      const userId = window.sessionStorage.getItem("userId");
-      console.log("User ID:", userId);
-      if (!userId) {
-        window.sessionStorage.setItem("userId", `user_${Date.now().toString()}`);
-      }
+        const userId = window.sessionStorage.getItem("userId");
+        console.log("User ID:", userId);
+        if (!userId) {
+            window.sessionStorage.setItem("userId", `user_${Date.now().toString()}`);
+        }
     }, []);
 
     // Auto-resize textarea as user types
@@ -75,24 +74,24 @@ const ChatInterface = ({
         }
     }, [messages]);
 
-  /**
-   * Compresses the chat history for a maximum number of messages for performance.
-   *
-   * @param {Array} history - The array of conversation history.
-   * @param {number} maxInteractions - The maximum number of interactions to store.
-   */
+    /**
+     * Compresses the chat history for a maximum number of messages for performance.
+     *
+     * @param {Array} history - The array of conversation history.
+     * @param {number} maxInteractions - The maximum number of interactions to store.
+     */
     const compressHistory = (history, maxInteractions) => {
-        maxHistory = maxInteractions * 2; // Include both user and response messages
+        const maxHistory = maxInteractions * 2; // Include both user and response messages
         if (history.length <= maxHistory) return history;
 
         return history.slice(-maxHistory);
     }
 
-  /**
-   * Handles the submission of the user message to the chatbot.
-   *
-   * @param {React.FormEvent<HTMLFormElement>} e - The form submission event.
-   */
+    /**
+     * Handles the submission of the user message to the chatbot.
+     *
+     * @param {React.FormEvent<HTMLFormElement>} e - The form submission event.
+     */
     const handleSubmit = async (e) => {
         e.preventDefault(); // Prevent default form submission behavior
 
@@ -104,7 +103,6 @@ const ChatInterface = ({
         setMessages((prev) => [...prev, { role: "user", content: userMessage }]); // Add user message to messages state
         setLoading(true);
         setInput(""); // Clear the input field
-
 
         try {
             const history = compressHistory(messages, 3); // Compress the chat history to store only the last 3 interactions
@@ -125,10 +123,10 @@ const ChatInterface = ({
 
             if (!response.ok) {
                 // If the user is not authorized, redirect to the login page.
-                if (response.status === 401 || response.status === 403) {
-                    window.location.href = "/login?callbackUrl=" + encodeURIComponent(window.location.pathname);
-                    return;
-                }
+                // if (response.status === 401 || response.status === 403) {
+                //     window.location.href = "/login?callbackUrl=" + encodeURIComponent(window.location.pathname);
+                //     return;
+                // }
                 throw new Error("Failed to fetch response. Status: " + response.status);
             }
 
@@ -160,74 +158,76 @@ const ChatInterface = ({
     }, [messages]);
 
     return (
-      <div className="relative h-screen bg-gradient-to-l from-bg-secondary from-20% to-bg-dark to-100%">
-      {/* Header */}
-      {title && (
-          <div className="p-4">
-              <h2 className={`text-xl ${theme.fonts.title}`}>{title}</h2>
-          </div>
-      )}
+        <div className="relative h-screen bg-gradient-to-l from-bg-secondary from-20% to-bg-dark to-100%">
+            {/* Header */}
+            {title && (
+                <div className="p-4 flex justify-end">
+                    <img src="/assets/MartyChat_Full-833x200.png" alt="MartyChat Logo" className="w-60 unselectable"/>
+                </div>
+            )}
 
-      {/* Chat Messages Container - Add bottom padding to account for fixed input form */}
-      <div
-          ref={chatContainerRef}
-          className={`h-[calc(100vh-180px)] overflow-y-auto px-4 space-y-4 ${theme.fonts.messages}`}
-      >
-          <div className="max-w-4xl mx-auto space-y-4">
-              {messages.map((message, index) => (
-                  <div
-                      key={index}
-                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                      <div
-                          className={`max-w-[80%] rounded-lg p-3 ${
-                              message.role === 'user'
-                                  ? theme.userMessage
-                                  : theme.botMessage
-                          }`}
-                      >
-                          {message.content}
-                      </div>
-                  </div>
-              ))}
-              {loading && (
-                  <div className="flex justify-start">
-                      <div className="bg-gray-200 text-gray-800 rounded-lg p-3">
-                          Thinking...
-                      </div>
-                  </div>
-              )}
-          </div>
-      </div>
+            {/* Chat Messages Container - Add bottom padding to account for fixed input form */}
+            <div
+                ref={chatContainerRef}
+                className={`h-[calc(100vh-140px)] overflow-y-auto px-4 pb-2 space-y-4 ${theme.fonts.messages}`}
+            >
+                <div className="max-w-4xl mx-auto space-y-4">
+                    {messages.map((message, index) => (
+                        <div
+                            key={index}
+                            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                        >
+                            <div
+                                className={`max-w-[80%] rounded-lg p-3 ${
+                                    message.role === 'user'
+                                        ? theme.userMessage
+                                        : theme.botMessage
+                                }`}
+                            >
+                                {message.content}
+                            </div>
+                        </div>
+                    ))}
+                    {loading && (
+                        <div className="flex justify-start">
+                            <div className="bg-gray-200 text-gray-800 rounded-lg p-3">
+                                Thinking...
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
 
-      {/* Input Form - Fixed at Bottom */}
-      <div className="fixed bottom-0 left-0 right-0 bg-opacity-5 backdrop-blur-sm">
-          <div className="max-w-4xl mx-auto p-4">
-              <form onSubmit={handleSubmit} className="flex gap-4">
-                  <textarea
-                      ref={textareaRef}
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      placeholder={placeholder}
-                      className={`flex-1 min-h-[40px] max-h-[${maxInputLines * 16}px] p-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary ${theme.fonts.input}`}
-                      onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault();
-                              handleSubmit(e);
-                          }
-                      }}
-                  />
-                  <button
-                      type="submit"
-                      disabled={loading || !input.trim()}
-                      className={`px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover active:bg-primary-active disabled:bg-bg-primary disabled:cursor-not-allowed ${theme.fonts.input}`}
-                  >
-                      Send
-                  </button>
-              </form>
-          </div>
-      </div>
-  </div>
+            {/* Input Form */}
+            <div className="fixed bottom-0 left-0 right-0 p-3 bg-opacity-5">
+                <div className="max-w-4xl mx-auto">
+                    <form onSubmit={handleSubmit}>
+                        <div className="flex items-end bg-bg-input -ml-4 bg-opacity-10 rounded-xl border border-gray-500 border-opacity-20 shadow-lg overflow-hidden">
+                            <textarea
+                                ref={textareaRef}
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                placeholder={placeholder}
+                                className={`flex-1 min-h-[44px] max-h-[${maxInputLines * 16}px] p-3 bg-transparent border-none resize-none focus:outline-none focus:ring-0 ${theme.fonts.input}`}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleSubmit(e);
+                                    }
+                                }}
+                            />
+                            <button
+                                type="submit"
+                                disabled={loading || !input.trim()}
+                                className={`flex-none px-4 py-2 m-1 rounded-lg bg-primary text-white hover:bg-primary-hover active:bg-primary-active disabled:bg-bg-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${theme.fonts.input}`}
+                            >
+                                Send
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     )
 };
 
