@@ -82,6 +82,20 @@ export default function Login() {
         localStorage.setItem("accessToken", data.authenticationResult.accessToken); // Access token for API requests
         localStorage.setItem("refreshToken", data.authenticationResult.refreshToken); // Refresh token for refreshing the ID token
 
+        // Store the user ID in the session storage to be used for authentication of API requests.
+        window.sessionStorage.setItem("userId", data.authenticationResult.userId);
+
+        // Calculate the token expiration times
+        const now = new Date().getTime();
+        const idTokenExpires = now + (data.authenticationResult.idTokenExpires * 1000);
+        const accessTokenExpires = now + (data.authenticationResult.accessTokenExpires * 1000);
+        const refreshTokenExpires = now + (data.authenticationResult.refreshTokenExpires * 1000);
+
+        // Store the token expiration times in local storage
+        localStorage.setItem("idTokenExpires", idTokenExpires);
+        localStorage.setItem("accessTokenExpires", accessTokenExpires);
+        localStorage.setItem("refreshTokenExpires", refreshTokenExpires);
+
         // Set the ID token in a cookie for middleware authentication.
         document.cookie = `idToken=${data.authenticationResult.idToken}; path=/`;
 

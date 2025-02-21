@@ -88,3 +88,38 @@ Resources:
             Method: POST
             Auth:
               Authorizer: NONE  # Allow unauthenticated access for login
+
+  TokenRefreshFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: token_refresh.lambda_handler
+      CodeUri: ../lambda/
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:InitiateAuth
+                - cognito-idp:DescribeUserPool
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+              Resource:
+                - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/martychat/dev/cognito_user_pool_id'
+                - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/martychat/dev/cognito_app_client_id'
+                - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/martychat/secrets/infrastructure_keys_dev'
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: '*'
+      Events:
+        TokenRefreshApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: "/api/auth/refresh"
+            Method: POST
+            Auth:
+              Authorizer: NONE  # Allow unauthenticated access for token refresh

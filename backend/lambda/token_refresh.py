@@ -1,7 +1,7 @@
-"""Lambda function for signing in a user.
+"""Lambda function for refreshing authentication tokens.
 
-This Lambda function signs in a user by validating the user's credentials against the AWS Cognito user pool. It returns
-an authentication result that includes a id token, access token, and refresh token.
+This Lambda function refreshes the authentication tokens using the refresh token from AWS Cognito. It returns
+new access and ID tokens.
 """
 
 __author__ = "Nikolai Alexander"
@@ -24,7 +24,7 @@ import hashlib
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[logging.StreamHandler()]  # Only use StreamHandler for CloudWatch
+    handlers=[logging.StreamHandler()] # Only use StreamHandler for CloudWatch
 )
 logger = logging.getLogger(__name__)
 
@@ -106,158 +106,70 @@ def get_client_metadata() -> dict:
         "cognito_client_secret": cognito_client_secret
     }
 
-def get_secret_hash(username: str, client_id: str, client_secret: str) -> str:
-    """Generate the secret hash for the AWS Cognito authentication request.
-
-    Args:
-        username (str): The username of the user signing in.
-        client_id (str): The client ID of the AWS Cognito app.
-        client_secret (str): The client secret of the AWS Cognito app.
-    Returns:
-        str: The secret hash for the authentication request.
-    """
-    message = username + client_id
-
-    dig = hmac.new(
-        key=client_secret.encode("utf-8"),
-        msg=message.encode("utf-8"),
-        digestmod=hashlib.sha256
-    ).digest()
-
-    return base64.b64encode(dig).decode()
-
-def get_user_id(cognito_client, access_token: str) -> str:
-    """Get the userID from the AWS Cognito user pool using the access token.
-
-    Args:
-        cognito_client (boto3.client): The AWS Cognito client.
-        access_token (str): The access token for the user.
-    Returns:
-        str: The user ID of the authenticated user.
-    """
-    try:
-        response = cognito_client.get_user(AccessToken=access_token)
-
-        userId = None
-        for attribute in response["UserAttributes"]:
-            if attribute["Name"] == "sub":
-                userId = attribute["Value"]
-
-        if not userId:
-            logger.error("User ID not found in Cognito response.")
-            raise RuntimeError("User ID not found in Cognito response.")
-
-        return userId
-    except Exception as e:
-        logger.exception("Error getting user ID from AWS Cognito.")
-        raise RuntimeError("Error getting user ID from AWS Cognito.") from e
-
 def lambda_handler(event, context):
-    """Lambda handler for signing in a user to AWS Cognito.
-
-    This function processes a request from the sign in page to authenticate a user in the AWS Cognito user pool. The
-    function validates the request and returns an authentication result that includes an id token, access token, and
-    refresh token.
+    """Lambda handler for refreshing authentication tokens.
 
     Args:
         event (dict): The event data passed to the Lambda function.
         context (object): The runtime information of the Lambda function.
     Returns:
-        dict: The response data to return from the Lambda function.
+        dict: The response data containing new authentication tokens.
     """
     try:
-        logger.info("Received sign-in request")
+        logger.info("Received token refresh request")
         logger.info(f"Event: {json.dumps(event)}")
 
         # Retrieve the request body from the event data
         body = json.loads(event["body"])
-        email = body["email"]
-        password = body["password"]
+        refresh_token = body.get("refreshToken")
 
-        if not email or not password:
-            logger.error("Email and password are required.")
+        if not refresh_token:
+            logger.error("Refresh token is required.")
             return {
                 "statusCode": 400,
                 "headers": CORS_HEADERS,
-                "body": json.dumps({"error": "Email and password are required."})
+                "body": json.dumps({"error": "Refresh token is required."})
             }
 
-        # Get the Cognito user pool ID, client ID, and client secret
+        # Get the Cognito client metadata
         cognito_client_metadata = get_client_metadata()
-        user_pool_id = get_user_pool_id()  # We still need this for logging/verification
+        user_pool_id = get_user_pool_id()
         client_id = cognito_client_metadata["cognito_client_id"]
-        client_secret = cognito_client_metadata["cognito_client_secret"]
-
-        # Generate the secret hash for the authentication request
-        secret_hash = get_secret_hash(email, client_id, client_secret)
 
         # Create a client for the AWS Cognito service
         cognito_client = boto3.client("cognito-idp", region_name=os.getenv("AWS_REGION", "us-east-1"))
 
         try:
-            logger.info("Initiating Cognito authentication")
+            logger.info("Initiating token refresh")
             response = cognito_client.initiate_auth(
                 ClientId=client_id,
-                AuthFlow="USER_PASSWORD_AUTH",
+                AuthFlow="REFRESH_TOKEN_AUTH",
                 AuthParameters={
-                    "USERNAME": email,
-                    "PASSWORD": password,
-                    "SECRET_HASH": secret_hash
+                    "REFRESH_TOKEN": refresh_token
                 }
             )
-        except cognito_client.exceptions.NotAuthorizedException as e:
-            error_msg = str(e)
-            logger.error(f"NotAuthorizedException details: {error_msg}")
-            logger.error(f"Client ID used: {client_id}")
-
-            # Check if there are any specific error indicators
-            if "password" in error_msg.lower():
-                logger.error("Error appears to be password-related")
-            elif "user" in error_msg.lower():
-                logger.error("Error appears to be username-related")
-
-            logger.error("Incorrect username or password.")
+        except cognito_client.exceptions.NotAuthorizedException:
+            logger.error("Refresh token is invalid or expired.")
             return {
                 "statusCode": 401,
                 "headers": CORS_HEADERS,
-                "body": json.dumps({"error": "Incorrect username or password."})
-            }
-        except cognito_client.exceptions.UserNotFoundException:
-            logger.error("User does not exist.")
-            return {
-                "statusCode": 404,
-                "headers": CORS_HEADERS,
-                "body": json.dumps({"error": "User does not exist."})
+                "body": json.dumps({"error": "Refresh token is invalid or expired."})
             }
         except botocore.exceptions.ClientError as e:
-            logger.exception("Error authenticating user.")
+            logger.exception("Error refreshing tokens.")
             return {
                 "statusCode": 500,
                 "headers": CORS_HEADERS,
-                "body": json.dumps({"error": f"Error authenticating user: {str(e)}"})
+                "body": json.dumps({"error": f"Error refreshing tokens: {str(e)}"})
             }
 
-        # Get the user ID from the access token.
-        try:
-            access_token = response["AuthenticationResult"]["AccessToken"]
-            user_id = get_user_id(cognito_client, access_token)
-        except Exception as e:
-            logger.exception("Error getting user ID from AWS Cognito.")
-            return {
-                "statusCode": 500,
-                "headers": CORS_HEADERS,
-                "body": json.dumps({"error": f"Error getting user ID from AWS Cognito: {str(e)}"})
-            }
-
-        logger.info(f"AuthenticationResult: {response['AuthenticationResult']}")
-
-        # Add the user ID to the authentication result
+        # Add expiration times to the authentication result
         authentication_result = response["AuthenticationResult"]
-        authentication_result["userId"] = user_id
+        expires_in = authentication_result.get("ExpiresIn", 3600)  # Default to 1 hour if not specified
+        authentication_result["idTokenExpires"] = expires_in
+        authentication_result["accessTokenExpires"] = expires_in
 
-        # Get the expiration times for each token
-        authentication_result["idTokenExpires"] = response["AuthenticationResult"].get("ExpiresIn")
-        authentication_result["accessTokenExpires"] = response["AuthenticationResult"].get("ExpiresIn")
+        # Get refresh token expiration from user pool
         try:
             user_pool_response = cognito_client.describe_user_pool(
                 UserPoolId=user_pool_id
@@ -265,22 +177,21 @@ def lambda_handler(event, context):
             refresh_token_validity = user_pool_response["UserPool"]["Policies"]["PasswordPolicy"].get("RefreshTokenValidity", 30)
             authentication_result["refreshTokenExpires"] = refresh_token_validity * 24 * 60 * 60
         except Exception as e:
-                logger.warning(f"Could not get refresh token validity: {str(e)}")
-                # Default to 30 days if we can't get the actual value
-                authentication_result["refreshTokenExpires"] = 30 * 24 * 60 * 60
+            logger.warning(f"Could not get refresh token validity: {str(e)}")
+            authentication_result["refreshTokenExpires"] = 30 * 24 * 60 * 60  # Default to 30 days
 
         return {
             "statusCode": 200,
             "headers": CORS_HEADERS,
             "body": json.dumps({
-                "message": "User authenticated successfully.",
+                "message": "Tokens refreshed successfully.",
                 "authenticationResult": authentication_result
             })
         }
     except Exception as e:
-        logger.exception("Error signing in user.")
+        logger.exception("Error refreshing tokens.")
         return {
             "statusCode": 500,
             "headers": CORS_HEADERS,
-            "body": json.dumps({"error": f"Error signing in user: {str(e)}"})
+            "body": json.dumps({"error": f"Error refreshing tokens: {str(e)}"})
         }

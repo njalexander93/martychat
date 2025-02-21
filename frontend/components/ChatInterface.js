@@ -12,6 +12,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Menu, X } from "lucide-react";
+import { isAuthenticated, checkAndRefreshAuth, handleLogout } from "@/utils/auth";
 
 /**
  * The chat interface component for the MartyChat application.
@@ -44,20 +45,31 @@ const ChatInterface = ({
     );
     const [input, setInput] = useState(""); // State for user input
     const [loading, setLoading] = useState(false); // State for loading indicator
+    const [isAuthed, setisAuthed] = useState(false); // State for user authentication
     const textareaRef = useRef(null); // Ref for textarea to auto-resize
     const chatContainerRef = useRef(null); // Ref for chat container to auto-scroll
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const menuRef = useRef(null); // Ref for menu to close on outside click
     const [isSidebarOpen, setIsSidebarOpen] = useState(false); // State for sidebar menu
 
-    // Set a unique user ID for the session. This is used to identify the user across multiple sessions. If the user ID
-    // is not set, generate a new one.
+    // Check if the user is authenticated and refresh tokens if necessary.
     useEffect(() => {
-        const userId = window.sessionStorage.getItem("userId");
-        console.log("User ID:", userId);
-        if (!userId) {
-            window.sessionStorage.setItem("userId", `user_${Date.now().toString()}`);
-        }
+        const checkAuth = async () => {
+            if (!isAuthenticated()) {
+                handleLogout(window.location.pathname);
+                return;
+            }
+            setisAuthed(true);
+        };
+
+        checkAuth();
+
+        // Set up periodic checks
+        const interval = setInterval(async () => {
+            await checkAndRefreshAuth();
+        }, 4 * 60 * 1000); // Check every 4 minutes
+
+        return () => clearInterval(interval);
     }, []);
 
     // Close menu when clicking outside
@@ -92,6 +104,13 @@ const ChatInterface = ({
         }
     }, [messages]);
 
+    // Auto-scroll to bottom when new messages arrive
+    useEffect(() => {
+        if (chatContainerRef.current) {
+            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+        }
+    }, [messages]);
+
     /**
      * Compresses the chat history for a maximum number of messages for performance.
      *
@@ -123,6 +142,12 @@ const ChatInterface = ({
         setInput(""); // Clear the input field
 
         try {
+            // Check and refresh authentication before making request
+            const isAuthed = await checkAndRefreshAuth();
+            if (!isAuthed) {
+                return;
+            }
+
             const history = compressHistory(messages, 3); // Compress the chat history to store only the last 3 interactions
 
             // Send the user message to the backend server for processing.
@@ -168,12 +193,14 @@ const ChatInterface = ({
         }
     };
 
-    // Auto-scroll to bottom when new messages arrive
-    useEffect(() => {
-        if (chatContainerRef.current) {
-            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-        }
-    }, [messages]);
+    const handleLogoutClick = (e) => {
+        e.preventDefault();
+        handleLogout("/");
+    };
+
+    if (!isAuthed) {
+        return <div>Loading...</div>;
+    }
 
     return (
         <div className="relative h-screen bg-gradient-to-l from-bg-secondary from-20% to-bg-dark to-100%">
@@ -214,10 +241,11 @@ const ChatInterface = ({
                     </button>
                 </div>
                 <div className="flex flex-col gap-2">
-                    <a href="/profile" className="p-3 text-text-light hover:bg-white/5 rounded-lg transition-colors">
+                    {/* TODO: Add link to profile page after creation. */}
+                    <a href="#" className="p-3 text-text-light hover:bg-white/5 rounded-lg transition-colors">
                         Profile
                     </a>
-                    <a href="/logout" className="p-3 text-text-light hover:bg-white/5 rounded-lg transition-colors">
+                    <a href="#" onClick={handleLogoutClick} className="p-3 text-text-light hover:bg-white/5 rounded-lg transition-colors">
                         Logout
                     </a>
                 </div>

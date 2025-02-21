@@ -98,7 +98,7 @@ export async function POST(request) {
             });
         }
 
-        // Create a new user in Cognito and DynamoDB with the create-user Lambda function.
+        // Login the user to Cognito with the login Lambda function
         const lambdaUrl = `${process.env.NEXT_PUBLIC_LAMBDA_URL}/api/auth/login`;
         console.log("Calling login Lambda function:", lambdaUrl);
         const response = await fetch(lambdaUrl, {
