@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useRef, useEffect } from "react";
+import { Menu, X } from "lucide-react";
 
 /**
  * The chat interface component for the MartyChat application.
@@ -45,6 +46,9 @@ const ChatInterface = ({
     const [loading, setLoading] = useState(false); // State for loading indicator
     const textareaRef = useRef(null); // Ref for textarea to auto-resize
     const chatContainerRef = useRef(null); // Ref for chat container to auto-scroll
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const menuRef = useRef(null); // Ref for menu to close on outside click
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false); // State for sidebar menu
 
     // Set a unique user ID for the session. This is used to identify the user across multiple sessions. If the user ID
     // is not set, generate a new one.
@@ -54,6 +58,20 @@ const ChatInterface = ({
         if (!userId) {
             window.sessionStorage.setItem("userId", `user_${Date.now().toString()}`);
         }
+    }, []);
+
+    // Close menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setIsMenuOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
     }, []);
 
     // Auto-resize textarea as user types
@@ -159,12 +177,51 @@ const ChatInterface = ({
 
     return (
         <div className="relative h-screen bg-gradient-to-l from-bg-secondary from-20% to-bg-dark to-100%">
-            {/* Header */}
-            {title && (
-                <div className="p-4 flex justify-end">
-                    <img src="/assets/MartyChat_Full-833x200.png" alt="MartyChat Logo" className="w-60 unselectable"/>
+            {/* Header with Hamburger */}
+            <div className="p-4 px-8 flex justify-between items-center">
+                <button
+                    onClick={() => setIsSidebarOpen(true)}
+                    className="p-1 text-primary rounded-md border border-primary hover:text-primary-hover hover:bg-white/5 hover:border-primary-hover active:text-primary-active active:border-primary-active transition-colors"
+                >
+                    <Menu size={24} />
+                </button>
+                <img
+                    src="/assets/MartyChat_Full-833x200.png"
+                    alt="MartyChat Logo"
+                    className="w-60 select-none"
+                />
+            </div>
+
+            {/* Overlay Sidebar */}
+            <div
+                className={`fixed inset-0 bg-black transition-opacity duration-300 z-40 ${
+                    isSidebarOpen ? 'opacity-50' : 'opacity-0 pointer-events-none'
+                }`}
+                onClick={() => setIsSidebarOpen(false)}
+            />
+            {/* Sidebar - slide in/out */}
+            <div
+                className={`fixed inset-y-0 left-0 w-64 bg-bg-dark border-r border-gray-500 border-opacity-20 p-4 z-50 shadow-lg transition-transform duration-300 ${
+                    isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                }`}
+            >
+                <div className="flex justify-end mb-4">
+                    <button
+                        onClick={() => setIsSidebarOpen(false)}
+                        className="p-0.25 rounded-md border border-text-text-light text-text-light hover:bg-white/5 hover:text-primary hover:border-primary active:text-primary-active active:border-primary-active transition-colors"
+                    >
+                        <X size={20} />
+                    </button>
                 </div>
-            )}
+                <div className="flex flex-col gap-2">
+                    <a href="/profile" className="p-3 text-text-light hover:bg-white/5 rounded-lg transition-colors">
+                        Profile
+                    </a>
+                    <a href="/logout" className="p-3 text-text-light hover:bg-white/5 rounded-lg transition-colors">
+                        Logout
+                    </a>
+                </div>
+            </div>
 
             {/* Chat Messages Container - Add bottom padding to account for fixed input form */}
             <div
