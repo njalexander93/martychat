@@ -254,7 +254,13 @@ const ChatInterface = ({
             {/* Chat Messages Container - Add bottom padding to account for fixed input form */}
             <div
                 ref={chatContainerRef}
-                className={`h-[calc(100vh-140px)] overflow-y-auto px-4 pb-2 space-y-4 ${theme.fonts.messages}`}
+                className={`h-[calc(100vh-140px)] overflow-y-auto px-4 pb-20 space-y-4 ${theme.fonts.messages}
+                [&::-webkit-scrollbar]:w-2
+                [&::-webkit-scrollbar-track]:bg-transparent
+                [&::-webkit-scrollbar-thumb]:rounded-full
+                [&::-webkit-scrollbar-thumb]:bg-bg-primary
+                [&::-webkit-scrollbar-thumb:hover]:bg-text-light
+                [&::-webkit-scrollbar-button]:hidden`}
             >
                 <div className="max-w-4xl mx-auto space-y-4">
                     {messages.map((message, index) => (
@@ -263,7 +269,7 @@ const ChatInterface = ({
                             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                         >
                             <div
-                                className={`max-w-[80%] rounded-lg p-3 ${
+                                className={`max-w-[80%] rounded-lg p-3 whitespace-pre-wrap break-words ${
                                     message.role === 'user'
                                         ? theme.userMessage
                                         : theme.botMessage
@@ -285,33 +291,39 @@ const ChatInterface = ({
 
             {/* Input Form */}
             <div className="fixed bottom-0 left-0 right-0 p-3 bg-opacity-5">
-                <div className="max-w-4xl mx-auto">
-                    <form onSubmit={handleSubmit}>
-                        <div className="flex items-end bg-bg-input -ml-4 bg-opacity-10 rounded-xl border border-gray-500 border-opacity-20 shadow-lg overflow-hidden">
-                            <textarea
-                                ref={textareaRef}
-                                value={input}
-                                onChange={(e) => setInput(e.target.value)}
-                                placeholder={placeholder}
-                                className={`flex-1 min-h-[44px] max-h-[${maxInputLines * 16}px] p-3 bg-transparent border-none resize-none focus:outline-none focus:ring-0 ${theme.fonts.input}`}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault();
-                                        handleSubmit(e);
-                                    }
-                                }}
-                            />
-                            <button
-                                type="submit"
-                                disabled={loading || !input.trim()}
-                                className={`flex-none px-4 py-2 m-1 rounded-lg bg-primary text-white hover:bg-primary-hover active:bg-primary-active disabled:bg-bg-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${theme.fonts.input}`}
-                            >
-                                Send
-                            </button>
-                        </div>
-                    </form>
+    <div className="max-w-4xl mx-auto">
+        <form onSubmit={handleSubmit}>
+            <div className="relative flex flex-col bg-bg-input -ml-4 bg-opacity-10 rounded-xl border border-gray-500 border-opacity-20 shadow-lg overflow-hidden">
+                <div className="relative flex">
+                    <textarea
+                        ref={textareaRef}
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        placeholder={placeholder}
+                        className={`flex-1 min-h-[44px] max-h-[${maxInputLines * 16}px] p-3 pr-24 bg-transparent border-none resize-none focus:outline-none focus:ring-0 ${theme.fonts.input}`}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSubmit(e);
+                            }
+                        }}
+                    />
+                    <button
+                        type="submit"
+                        disabled={loading || !input.trim()}
+                        className={`absolute top-1 right-1 p-2 rounded-lg bg-primary text-white hover:bg-primary-hover active:bg-primary-active disabled:bg-bg-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${theme.fonts.input}`}
+                    >
+                        Send
+                    </button>
+                </div>
+                <div className="px-3 pb-1.5 text-text-secondary text-[11px]">
+                <span className="bg-bg-secondary bg-opacity-20 px-1.5 py-1
+                 text-[10px] rounded-md"><code>Shift + Return</code></span> for new line
                 </div>
             </div>
+        </form>
+    </div>
+</div>
         </div>
     )
 };

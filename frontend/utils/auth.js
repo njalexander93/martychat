@@ -43,7 +43,13 @@ export const isTokenExpired = () => {
 export const refreshTokens = async () => {
     try {
         const refreshToken = localStorage.getItem("refreshToken");
+        const userId = window.sessionStorage.getItem("userId");
         if (!refreshToken) {
+            console.error("No refresh token found");
+            return false;
+        }
+        if (!userId) {
+            console.error("No user ID found");
             return false;
         }
 
@@ -57,14 +63,16 @@ export const refreshTokens = async () => {
                     // TODO: Add production-specific headers to call remote lambda functions
                 })
             },
-            body: JSON.stringify({ refreshToken }),
+            body: JSON.stringify({ refreshToken, userId }),
         });
 
         if (!response.ok) {
+            console.log("Failed to refresh token.");
             throw new Error("Failed to refresh token");
         }
 
         const data = await response.json();
+
         const now = new Date().getTime();
 
         // Update tokens and expiration times
@@ -90,7 +98,7 @@ export const refreshTokens = async () => {
 export const isAuthenticated = () => {
     const userId = window.sessionStorage.getItem("userId");
     const idToken = localStorage.getItem("idToken");
-    return !!(userId && idToken && !isTokenExpired());
+    return !!(userId && idToken);
 };
 
 /**

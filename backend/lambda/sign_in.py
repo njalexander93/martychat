@@ -27,6 +27,8 @@ logging.basicConfig(
     handlers=[logging.StreamHandler()]  # Only use StreamHandler for CloudWatch
 )
 logger = logging.getLogger(__name__)
+if os.getenv("ENV", "production") == "development":
+    logger.setLevel(logging.DEBUG)
 
 # Set the CORS headers for the response
 CORS_HEADERS = {
@@ -116,6 +118,7 @@ def get_secret_hash(username: str, client_id: str, client_secret: str) -> str:
     Returns:
         str: The secret hash for the authentication request.
     """
+    logger.info(f"Generating secret hash for {username} with client ID {client_id}")
     message = username + client_id
 
     dig = hmac.new(
@@ -253,17 +256,17 @@ def lambda_handler(event, context):
 
         # Add the user ID to the authentication result
         authentication_result = response["AuthenticationResult"]
-        authentication_result["userId"] = user_id
+        authentication_result["UserId"] = user_id
 
         # Get the expiration times for each token
-        authentication_result["idTokenExpires"] = response["AuthenticationResult"].get("ExpiresIn")
-        authentication_result["accessTokenExpires"] = response["AuthenticationResult"].get("ExpiresIn")
+        authentication_result["IdTokenExpires"] = response["AuthenticationResult"].get("ExpiresIn")
+        authentication_result["AccessTokenExpires"] = response["AuthenticationResult"].get("ExpiresIn")
         try:
             user_pool_response = cognito_client.describe_user_pool(
                 UserPoolId=user_pool_id
             )
             refresh_token_validity = user_pool_response["UserPool"]["Policies"]["PasswordPolicy"].get("RefreshTokenValidity", 30)
-            authentication_result["refreshTokenExpires"] = refresh_token_validity * 24 * 60 * 60
+            authentication_result["RefreshTokenExpires"] = refresh_token_validity * 24 * 60 * 60
         except Exception as e:
                 logger.warning(f"Could not get refresh token validity: {str(e)}")
                 # Default to 30 days if we can't get the actual value

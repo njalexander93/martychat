@@ -78,18 +78,18 @@ export default function Login() {
       // Store the authentication tokens in local storage
       if (data.authenticationResult) {
         // Store the tokens in local storage
-        localStorage.setItem("idToken", data.authenticationResult.idToken); // ID token for authentication
-        localStorage.setItem("accessToken", data.authenticationResult.accessToken); // Access token for API requests
-        localStorage.setItem("refreshToken", data.authenticationResult.refreshToken); // Refresh token for refreshing the ID token
+        localStorage.setItem("idToken", data.authenticationResult.IdToken); // ID token for authentication
+        localStorage.setItem("accessToken", data.authenticationResult.AccessToken); // Access token for API requests
+        localStorage.setItem("refreshToken", data.authenticationResult.RefreshToken); // Refresh token for refreshing the ID token
 
         // Store the user ID in the session storage to be used for authentication of API requests.
-        window.sessionStorage.setItem("userId", data.authenticationResult.userId);
+        window.sessionStorage.setItem("userId", data.authenticationResult.UserId);
 
         // Calculate the token expiration times
         const now = new Date().getTime();
-        const idTokenExpires = now + (data.authenticationResult.idTokenExpires * 1000);
-        const accessTokenExpires = now + (data.authenticationResult.accessTokenExpires * 1000);
-        const refreshTokenExpires = now + (data.authenticationResult.refreshTokenExpires * 1000);
+        const idTokenExpires = now + (data.authenticationResult.IdTokenExpires * 1000);
+        const accessTokenExpires = now + (data.authenticationResult.AccessTokenExpires * 1000);
+        const refreshTokenExpires = now + (data.authenticationResult.RefreshTokenExpires * 1000);
 
         // Store the token expiration times in local storage
         localStorage.setItem("idTokenExpires", idTokenExpires);
@@ -97,7 +97,7 @@ export default function Login() {
         localStorage.setItem("refreshTokenExpires", refreshTokenExpires);
 
         // Set the ID token in a cookie for middleware authentication.
-        document.cookie = `idToken=${data.authenticationResult.idToken}; path=/`;
+        document.cookie = `idToken=${data.authenticationResult.IdToken}; path=/`;
 
         // Get the callback URL if it exists
         const urlParams = new URLSearchParams(window.location.search);

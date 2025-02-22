@@ -28,6 +28,8 @@ logging.basicConfig(
     handlers=[logging.StreamHandler()] # Only use StreamHandler for CloudWatch
 )
 logger = logging.getLogger(__name__)
+if os.getenv("ENV", "production") == "development":
+    logger.setLevel(logging.DEBUG)
 
 # Set the CORS headers for the response
 CORS_HEADERS = {
@@ -117,6 +119,7 @@ def get_secret_hash(username: str, client_id: str, client_secret: str) -> str:
     Returns:
         str: The secret hash for the authentication request.
     """
+    logger.info(f"Generating secret hash for {username} with client ID {client_id}")
     message = username + client_id
 
     dig = hmac.new(

@@ -37,5 +37,7 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    require('tailwind-scrollbar')({ nocompatible: true }), // Added scrollbar plugin with nocompatible mode
+  ],
 };

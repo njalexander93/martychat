@@ -27,6 +27,8 @@ logging.basicConfig(
     handlers=[logging.StreamHandler()] # Only use StreamHandler for CloudWatch
 )
 logger = logging.getLogger(__name__)
+if os.getenv("ENV", "production") == "development":
+    logger.setLevel(logging.DEBUG)
 
 # Set the CORS headers for the response
 CORS_HEADERS = {
@@ -106,6 +108,27 @@ def get_client_metadata() -> dict:
         "cognito_client_secret": cognito_client_secret
     }
 
+def get_secret_hash(username: str, client_id: str, client_secret: str) -> str:
+    """Generate the secret hash for the AWS Cognito authentication request.
+
+    Args:
+        username (str): The username of the user signing in.
+        client_id (str): The client ID of the AWS Cognito app.
+        client_secret (str): The client secret of the AWS Cognito app.
+    Returns:
+        str: The secret hash for the authentication request.
+    """
+    logger.info(f"Generating secret hash for {username} with client ID {client_id}")
+    message = username + client_id
+
+    dig = hmac.new(
+        key=client_secret.encode("utf-8"),
+        msg=message.encode("utf-8"),
+        digestmod=hashlib.sha256
+    ).digest()
+
+    return base64.b64encode(dig).decode()
+
 def lambda_handler(event, context):
     """Lambda handler for refreshing authentication tokens.
 
@@ -122,6 +145,7 @@ def lambda_handler(event, context):
         # Retrieve the request body from the event data
         body = json.loads(event["body"])
         refresh_token = body.get("refreshToken")
+        user_id = body.get("userId")
 
         if not refresh_token:
             logger.error("Refresh token is required.")
@@ -130,14 +154,32 @@ def lambda_handler(event, context):
                 "headers": CORS_HEADERS,
                 "body": json.dumps({"error": "Refresh token is required."})
             }
+        if not user_id:
+            logger.error("User ID is required.")
+            return {
+                "statusCode": 400,
+                "headers": CORS_HEADERS,
+                "body": json.dumps({"error": "User ID is required."})
+            }
 
-        # Get the Cognito client metadata
+        # Get the Cognito user pool ID, client ID, and client secret
         cognito_client_metadata = get_client_metadata()
-        user_pool_id = get_user_pool_id()
+        user_pool_id = get_user_pool_id()  # We still need this for logging/verification
         client_id = cognito_client_metadata["cognito_client_id"]
+        client_secret = cognito_client_metadata["cognito_client_secret"]
+
+        # Generate the secret hash for the authentication request
+        secret_hash = get_secret_hash(user_id, client_id, client_secret)
 
         # Create a client for the AWS Cognito service
         cognito_client = boto3.client("cognito-idp", region_name=os.getenv("AWS_REGION", "us-east-1"))
+
+       # Log additional details about the user pool and client
+        try:
+            user_pool_response = cognito_client.describe_user_pool(UserPoolId=user_pool_id)
+            logger.info(f"User Pool Refresh Token Validity: {user_pool_response['UserPool']['Policies']['PasswordPolicy'].get('RefreshTokenValidity', 'Not Found')} days")
+        except Exception as pool_error:
+            logger.warning(f"Could not retrieve user pool details: {str(pool_error)}")
 
         try:
             logger.info("Initiating token refresh")
@@ -145,15 +187,19 @@ def lambda_handler(event, context):
                 ClientId=client_id,
                 AuthFlow="REFRESH_TOKEN_AUTH",
                 AuthParameters={
-                    "REFRESH_TOKEN": refresh_token
+                    "REFRESH_TOKEN": refresh_token,
+                    "SECRET_HASH": secret_hash
                 }
             )
-        except cognito_client.exceptions.NotAuthorizedException:
-            logger.error("Refresh token is invalid or expired.")
+        except cognito_client.exceptions.NotAuthorizedException as e:
+            # logger.error(f"Refresh token is invalid or expired. TOKEN {refresh_token}")
+            logger.exception(f"NotAuthorizedException has appeared: {str(e)}")
             return {
                 "statusCode": 401,
                 "headers": CORS_HEADERS,
-                "body": json.dumps({"error": "Refresh token is invalid or expired."})
+                # "body": json.dumps({"error": f"Refresh token is invalid or expired. TOKEN {refresh_token}"})
+                "body": json.dumps({"error": f"NotAuthorizedException has appeared: {str(e)}"})
+
             }
         except botocore.exceptions.ClientError as e:
             logger.exception("Error refreshing tokens.")
