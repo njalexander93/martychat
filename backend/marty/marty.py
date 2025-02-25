@@ -10,20 +10,101 @@ __date__ = "TBD"
 __license__ = "Proprietary"
 __copyright__ = "Copyright (c) 2025 MartyChat"
 
-import logging
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+import json
+import jwt
 import openai
 import requests
-from fastapi import APIRouter, HTTPException
+import boto3
+from fastapi import APIRouter, Depends, HTTPException, Security
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
+from utils.logger import logger
 from .model_loader import load_model
 
 router = APIRouter()
+security = HTTPBearer()
+
+COGNITO_PUBLIC_KEYS = None
 
 class ChatRequest(BaseModel):
     """Schema for chat API request."""
-    question: str
-    user_id: str
+    message: str
+    conversation_history: list = []
 
+def verify_token(credentials: HTTPAuthorizationCredentials = Security(security)) -> str:
+    """Verifies the user's token.
+
+    This function verifies the user's token by sending a request to the authentication service.
+
+    Args:
+        credentials (HTTPAuthorizationCredentials): The user's authentication credentials.
+    Returns:
+        str: The user's ID.
+    Raises:
+        HTTPException: If the token is invalid or missing.
+    """
+    global COGNITO_PUBLIC_KEYS
+
+    token = credentials.credentials # Get the token from the credentials
+
+    cognito_user_param = os.getenv("COGNITO_USER_PARAM")
+    cognito_client_param = os.getenv("COGNITO_CLIENT_PARAM")
+    aws_region = os.getenv("REGION_NAME")
+    if not cognito_user_param:
+        logger.error("COGNITO_USER_PARAM environment variable is not set.")
+        raise RuntimeError("COGNITO_USER_PARAM environment variable is not set.")
+    if not cognito_client_param:
+        logger.error("COGNITO_CLIENT_PARAM environment variable is not set.")
+        raise RuntimeError("COGNITO_CLIENT_PARAM environment variable is not set.")
+    if not aws_region:
+        logger.error("REGION_NAME environment variable is not set.")
+        raise RuntimeError("REGION_NAME environment variable is not set.")
+
+    # Get the Cognito User Pool ID and Client ID from AWS Systems Manager Parameter Store
+    session = boto3.session.Session()
+    ssm = session.client("ssm") # Client for AWS Systems Manager Parameter Store
+    try:
+        cognito_user_pool_id = ssm.get_parameter(Name=cognito_user_param, WithDecryption=True)["Parameter"]["Value"]
+    except Exception as e:
+        logger.exception("Error getting Cognito ID from AWS Systems Manager Parameter Store.")
+        raise RuntimeError("Error getting Cognito ID from AWS Systems Manager Parameter Store.") from e
+    try:
+        cognito_client_id = ssm.get_parameter(Name=cognito_client_param, WithDecryption=True)["Parameter"]["Value"]
+    except Exception as e:
+        logger.exception("Error getting Cognito ID from AWS Systems Manager Parameter Store.")
+        raise RuntimeError("Error getting Cognito ID from AWS Systems Manager Parameter Store.") from e
+
+    try:
+        header = jwt.get_unverified_header(token)
+
+        # Get the public keys from the Cognito User Pool and find the key that matches the token
+        if not COGNITO_PUBLIC_KEYS:
+            cognito_keys_url = f"https://cognito-idp.{aws_region}.amazonaws.com/{cognito_user_pool_id}/.well-known/jwks.json"
+            response = requests.get(cognito_keys_url)
+            COGNITO_PUBLIC_KEYS = response.json()["keys"]
+
+        # Find the key that matches the token in the public keys and decode the token
+        key = next((key for key in COGNITO_PUBLIC_KEYS if key["kid"] == header["kid"]), None)
+        if not key:
+            raise HTTPException(status_code=403, detail="Invalid token key.")
+        decoded_token = jwt.decode(token, key=jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(key)),
+                                   algorithms=["RS256"], audience=cognito_client_id)
+
+        # Get the user ID from the token
+        user_id = decoded_token.get("sub")
+        if not user_id:
+            logger.error("Token missing 'sub' claim.")
+            raise HTTPException(status_code=403, detail="Invalid token structure.")
+
+        return user_id
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=403, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=403, detail="Invalid token")
 
 def format_citations(citations: dict) -> str:
     """Formats citations with deduplication and clear formatting.
@@ -35,20 +116,7 @@ def format_citations(citations: dict) -> str:
     Returns:
         str: The formatted citations with deduplication.
     """
-    # Create a dictionary of unique sources
-    unique_sources = {}
-    for cid, source in citations.items():
-        source_key = source.strip().lower()
-        if source_key not in unique_sources:
-            unique_sources[source_key] = cid
-
-    # Format citations using only unique sources
-    formatted_citations = []
-    for source_key, cid in unique_sources.items():
-        original_source = citations[cid]
-        formatted_citations.append(f"{cid}: {original_source}")
-
-    return "\n".join(formatted_citations)
+    return " "
 
 def generate_response_with_citations(question: str, context: str, system_prompt: str, citations: dict) -> str:
     """Generates a response with citations based on the provided context and question.
@@ -80,29 +148,10 @@ def generate_response_with_citations(question: str, context: str, system_prompt:
     Available Citations:
     {format_citations(citations)}
     """
-
-    # Generate response from OpenAI model
-    model = load_model()
-    response = openai.ChatCompletion.create(
-        model=model["openai_model"],
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=model["temperature"]
-    )
-    response_text = response['choices'][0]['message']['content']
-
-    # Ensure references are included
-    if citations and "References:" not in response_text:
-        response_text += "\n\nReferences:\n"
-        for cid, source in citations.items():
-            response_text += f"{cid}: {source}\n"
-
-    return response_text
+    return " "
 
 @router.post("/marty")
-def generate_response(request: ChatRequest) -> dict:
+def generate_response(request: ChatRequest, user_id: str = Depends(verify_token)) -> dict:
     """Processes user input with history and citation support.
 
     This endpoint processes a user's question with historical context and citation support. It generates a response
@@ -114,65 +163,10 @@ def generate_response(request: ChatRequest) -> dict:
     Returns:
         dict: The response generated by the AI model.
     """
-    # Extract the recent context from the conversation
-    history_url = "https://your-aws-lambda-url/get-conversation-history"
-    history_response = requests.post(history_url, json={"user_id": request.user_id, "history_length": 3}, timeout=30)
-    history = history_response.json().get("history", [])
+    try:
+        logger.info(f"Received request body: {request.dict()}")
+    except Exception as e:
+        logger.error(f"Error processing request: {str(e)}")
+        raise HTTPException(status_code=400, detail="Invalid request format")
 
-    # Prepare the context as a list of user inputs and system prompts
-    recent_context = []
-    if history:
-        for message in history:
-            if message["role"] == "system":
-                recent_context.append(f"Assistant: {message['content']}")
-            elif message["role"] == "user":
-                recent_context.append(f"User: {message['content']}")
-
-    if recent_context:
-        context = "\n".join(recent_context)
-        enhanced_query = f"Context from previous conversation: {context}\n\nCurrent question: {request.question}"
-    else:
-        enhanced_query = request.question
-
-    # Analyze the query complexity
-    complexity_url = "https://your-aws-lambda-url/analyze-query-complexity"
-    complexity_response = requests.post(complexity_url, json={"query": enhanced_query}, timeout=30)
-    k = complexity_response.json().get("k", 5)
-
-    # Fetch similar documents from Pinecone
-    pinecone_url = "https://your-aws-lambda-url/get-similar-docs"
-    pinecone_response = requests.post(pinecone_url, json={"query": enhanced_query, "k": k}, timeout=30)
-    pinecone_data = pinecone_response.json()
-
-    # Extract content and citations
-    citations = pinecone_data.get("citations", {})
-    contexts = []
-    for match in pinecone_data.get("matches", []):
-        if match["score"] >= 0.45:
-            contexts.append(f"{match['content']} {match['citation_id']}")
-    combined_context = "\n\n".join(contexts)
-
-    # Define the system prompt for the AI model
-    system_prompt = """You are a knowledgeable assistant specializing in presenting research and academic work in a constructive and positive manner. When discussing Seligman's work:
-
-    1. Focus on his contributions, insights, and the positive impact of his research
-    2. Present his theories and findings in an appreciative, professional tone
-    3. Use ONLY information provided in the context - do not reference external knowledge
-    4. If asked about topics not covered in the provided context, politely indicate that the information is not available in the current document set
-    5. Maintain academic rigor while highlighting the strengths and value of the work
-
-    Format your response with:
-    - Clear structure and logical flow
-    - Professional, formal language
-    - Full sentences and well-developed paragraphs
-    - Proper citation integration
-    """
-
-    # Generate response with citations from the combined context and enhanced query.
-    response = generate_response_with_citations(
-        question=enhanced_query,
-        context=combined_context,
-        system_prompt=system_prompt,
-        citations=citations
-    )
-    return {"response": response}
+    return dict(response="Hello, World!")

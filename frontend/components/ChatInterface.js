@@ -116,6 +116,7 @@ const ChatInterface = ({
      *
      * @param {Array} history - The array of conversation history.
      * @param {number} maxInteractions - The maximum number of interactions to store.
+     * @returns {Array} The compressed conversation history.
      */
     const compressHistory = (history, maxInteractions) => {
         const maxHistory = maxInteractions * 2; // Include both user and response messages
@@ -150,17 +151,16 @@ const ChatInterface = ({
 
             const history = compressHistory(messages, 3); // Compress the chat history to store only the last 3 interactions
 
-            // Send the user message to the backend server for processing.
-            const response = await fetch(endpoint, {
+            const backendUrl = process.env.NEXT_PUBLIC_API_URL + endpoint;
+            const response = await fetch(backendUrl, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
+                    "Authorization": "Bearer " + localStorage.getItem("idToken"),
                 },
-                credentials: "include", // Enable sending cookies
                 body: JSON.stringify({
                     message: userMessage, // Include the user message in the request
                     conversation_history: history, // Include conversation history in the request
-                    user_id: window.sessionStorage.getItem("userId"), // Include the user ID from session storage
                 }),
             });
 
