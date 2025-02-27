@@ -81,7 +81,7 @@ def get_client_metadata() -> dict:
 
     # Get the Cognito client secret from AWS Secrets Manager
     try:
-        secret_id = ssm.get_parameter(Name=os.getenv("INFRA_SECRETS_PARAM"), WithDecryption=True)["Parameter"]["Value"]
+        secret_id = ssm.get_parameter(Name=infra_secret_param, WithDecryption=True)["Parameter"]["Value"]
         secret_key = secrets_manager.get_secret_value(SecretId=secret_id)
         secrets = json.loads(secret_key["SecretString"])
 

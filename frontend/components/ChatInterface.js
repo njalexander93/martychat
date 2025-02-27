@@ -120,9 +120,18 @@ const ChatInterface = ({
      */
     const compressHistory = (history, maxInteractions) => {
         const maxHistory = maxInteractions * 2; // Include both user and response messages
-        if (history.length <= maxHistory) return history;
 
-        return history.slice(-maxHistory);
+        // Remove the welcome message from the chat history and compress to the maximum number of interactions.
+        const filteredHistory = history.filter(message => message.role !== "chatbot" || message.content !== welcomeMessage);
+        if (filteredHistory.length === 0) {
+            return [];
+        }
+        if (filteredHistory.length <= maxHistory) {
+            return filteredHistory;
+        }
+        else {
+            return filteredHistory.slice(-maxHistory);
+        }
     }
 
     /**

@@ -15,23 +15,27 @@ import os
 import json
 import openai
 import boto3
-import logging
 import datetime
+from dotenv import load_dotenv
+from utils.logger import logger
 from pinecone import Pinecone
 from dataclasses import dataclass
 
-# Check if the log directory exists, if not create it.
-log_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "log") # Stored in ../backend/log
-os.makedirs(log_dir, exist_ok=True)
+ENV = os.getenv("ENV", "development")
+if ENV not in ["development", "production"]:
+    logger.error("ENV environment variable must be either 'development' or 'production'")
+    raise ValueError("ENV environment variable must be either 'development' or 'production'")
+else:
+    env_file = f".env.{ENV}"
 
-# Configure logging to write to a log file
-log_timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-log_path = os.path.join(log_dir, f"model_loader-{log_timestamp}.log")
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler(log_path), logging.StreamHandler()]
-)
+logger.info(f"Loading environment variables from .env")
+load_dotenv(".env")
+if os.path.exists(env_file):
+    logger.info(f"Loading environment variables from {env_file}")
+    load_dotenv(env_file, override=True)
+if os.path.exists(".env.local"):
+    logger.info(f"Loading environment variables from .env.local")
+    load_dotenv(".env.local", override=True)
 
 @dataclass
 class ModelConfig:
@@ -92,7 +96,7 @@ class ApiConfig:
         ssm = session.client("ssm") # Client for AWS Systems Manager Parameter Store
 
         # Get API Keys and Organization ID from AWS Secrets Manager
-        logging.info("Getting API keys from AWS Secrets Manager.")
+        logger.info("Getting API keys from AWS Secrets Manager.")
         try:
             secret_id = ssm.get_parameter(Name=os.getenv("API_SECRETS_PARAM"))["Parameter"]["Value"]
             secret_key = secrets_manager.get_secret_value(SecretId=secret_id)
@@ -101,19 +105,19 @@ class ApiConfig:
             openai_api_key = secrets["openai_api_key"]
             openai_org_id = secrets["openai_org_id"]
             pinecone_api_key = secrets["pinecone_api_key"]
-            logging.info("API keys retrieved successfully!")
+            logger.info("API keys retrieved successfully!")
         except Exception as e:
-            logging.exception("Error getting secrets from AWS Secrets Manager.")
+            logger.exception("Error getting secrets from AWS Secrets Manager.")
             raise RuntimeError("Error getting secrets from AWS Secrets Manager.") from e
 
         # Get the Pinecone Env and Index Name from AWS Systems Manager Parameter Store
-        logging.info("Getting Pinecone environment and index name from AWS Systems Manager Parameter Store.")
+        logger.info("Getting Pinecone environment and index name from AWS Systems Manager Parameter Store.")
         try:
             pinecone_env = ssm.get_parameter(Name=os.getenv("PINECONE_ENV_PARAM"))["Parameter"]["Value"]
             pinecone_index_name = ssm.get_parameter(Name=os.getenv("PINECONE_INDEX_PARAM"))["Parameter"]["Value"]
-            logging.info("Pinecone environment and index name retrieved successfully!")
+            logger.info("Pinecone environment and index name retrieved successfully!")
         except Exception as e:
-            logging.exception("Error getting parameters from AWS Systems Manager Parameter Store.")
+            logger.exception("Error getting parameters from AWS Systems Manager Parameter Store.")
             raise RuntimeError("Error getting parameters from AWS Systems Manager Parameter Store.") from e
 
         return cls(
@@ -138,20 +142,20 @@ def set_openai_client():
 
     # Check if the OpenAI API Key and Organization ID are set in the api_config
     if not api_config.openai_api_key:
-        logging.error("OpenAI API Key is missing.")
+        logger.error("OpenAI API Key is missing.")
         raise ValueError("OpenAI API Key is missing.")
     if not api_config.openai_org_id:
-        logging.error("OpenAI Organization ID is missing.")
+        logger.error("OpenAI Organization ID is missing.")
         raise ValueError("OpenAI Organization ID is missing.")
 
     # Create an OpenAI API client
-    logging.info("Initializing OpenAI API client.")
+    logger.info("Initializing OpenAI API client.")
     try:
         openai.api_key = api_config.openai_api_key
         openai.organization = api_config.openai_org_id
-        logging.info("OpenAI API client initialized successfully!")
+        logger.info("OpenAI API client initialized successfully!")
     except Exception as e:
-        logging.exception("Error initializing OpenAI API client.")
+        logger.exception("Error initializing OpenAI API client.")
         raise RuntimeError("Error initializing OpenAI API client.") from e
 
 def get_pinecone_index() -> Pinecone.Index:
@@ -167,20 +171,20 @@ def get_pinecone_index() -> Pinecone.Index:
 
     # Check if the Pinecone API Key and Index Name are set in the api_config
     if not api_config.pinecone_api_key:
-        logging.error("Pinecone API Key is missing.")
+        logger.error("Pinecone API Key is missing.")
         raise ValueError("Pinecone API Key is missing.")
     if not api_config.pinecone_index_name:
-        logging.error("Pinecone Index Name is missing.")
+        logger.error("Pinecone Index Name is missing.")
         raise ValueError("Pinecone Index Name is missing.")
 
     # Create a Pinecone Index instance
-    logging.info("Initializing Pinecone Index.")
+    logger.info("Initializing Pinecone Index.")
     try:
         pinecone = Pinecone(api_key=api_config.pinecone_api_key)
         pinecone_index = pinecone.Index(api_config.pinecone_index_name)
-        logging.info("Pinecone Index initialized successfully!")
+        logger.info("Pinecone Index initialized successfully!")
     except Exception as e:
-        logging.exception("Error initializing Pinecone Index.")
+        logger.exception("Error initializing Pinecone Index.")
         raise RuntimeError("Error initializing Pinecone Index.") from e
 
     return pinecone_index
@@ -199,7 +203,7 @@ def load_model() -> dict:
     # Load the API and model configurations
     model_config = ModelConfig.from_defaults()
 
-    logging.info("Setting up MartyChat client.")
+    logger.info("Setting up MartyChat client.")
     return {
         "openai_model": model_config.openai_model,
         "openai_embedding_model": model_config.openai_embedding_model,
