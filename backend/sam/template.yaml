@@ -148,6 +148,7 @@ Resources:
       Properties:
         Handler: get_similar_documents.lambda_handler
         CodeUri: ../lambda/
+        Timeout: 30
         Policies:
           - AWSLambdaBasicExecutionRole
         Events:
@@ -156,6 +157,24 @@ Resources:
             Properties:
               RestApiId: !Ref ApiGateway
               Path: "/api/v1/get-similar-documents"
+              Method: POST
+              Auth:
+                Authorizer: NONE  # Allow unauthenticated access for query complexity analysis
+
+  GenerateResponseWithCitations:
+      Type: AWS::Serverless::Function
+      Properties:
+        Handler: generate_response_with_citations.lambda_handler
+        CodeUri: ../lambda/
+        Timeout: 60
+        Policies:
+          - AWSLambdaBasicExecutionRole
+        Events:
+          GenerateResponseWithCitationsApiEvent:
+            Type: Api
+            Properties:
+              RestApiId: !Ref ApiGateway
+              Path: "/api/v1/generate-response-with-citations"
               Method: POST
               Auth:
                 Authorizer: NONE  # Allow unauthenticated access for query complexity analysis

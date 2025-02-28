@@ -15,8 +15,11 @@ import os
 import json
 import logging
 import string
-from openai import OpenAI
+import time
+from functools import wraps
+from openai import OpenAI, APIError, RateLimitError, APIConnectionError
 from pinecone import Pinecone
+from requests.exceptions import SSLError, ConnectionError, Timeout
 import boto3
 import nltk
 nltk.download('stopwords')
@@ -63,6 +66,47 @@ PSYCHOLOGY_TERMS = {
     'compare': ['comparison', 'differences', 'similarities', 'relationship', 'between'],
     'performance': ['performance', 'achievement', 'outcome']
 }
+
+def retry_operation(max_retries=3):
+    """Decorator for retrying an operation.
+
+    This decorator retries an operation up to a maximum number of times with an exponential backoff.
+
+    Args:
+        max_retries (int): The maximum number of retries.
+        backoff_factor (float): The backoff factor for exponential backoff.
+    Returns:
+        function: The decorated function.
+    """
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            retry_count = 0
+            while retry_count <= max_retries:
+                try:
+                    return func(*args, **kwargs)
+                except (APIError, RateLimitError, APIConnectionError) as e:
+                    # Retry on OpenAI API errors
+                    retry_count += 1
+                    if retry_count >= max_retries:
+                        raise e
+
+                    wait_time = 2 ** retry_count
+                    logger.warning("Hit a %s error while trying to get a response from OpenAI. Retrying in %s seconds.", e.__class__.__name__, wait_time)
+                    logger.warning("Error message: %s", e)
+                    time.sleep(wait_time)
+                except (SSLError, ConnectionError, Timeout) as e:
+                    # Retry on Pinecone connection errors
+                    retry_count += 1
+                    if retry_count >= max_retries:
+                        raise e
+
+                    wait_time = 2 ** retry_count
+                    logger.warning("Hit a %s error while trying to connect to the Pinecone index. Retrying in %s seconds.", e.__class__.__name__, wait_time)
+                    logger.warning("Error message: %s", e)
+                    time.sleep(wait_time)
+        return wrapper
+    return decorator
 
 def get_api_parameters(aws_parameters: str) -> dict:
     """Function for retrieving the OpenAI API key and organization ID from AWS Secrets Manager.
@@ -159,6 +203,47 @@ def preprocess_message(message: str) -> str:
     enhanced_message = " ".join(enhanced_words)
     return enhanced_message
 
+@retry_operation(max_retries=3)
+def get_embeddings_batch(client: OpenAI, search_queries: list) -> list:
+    """Function for getting embeddings for a batch of search queries.
+
+    This function retrieves embeddings for a batch of search queries from the OpenAI API.
+
+    Args:
+        client (OpenAI): The OpenAI API client.
+        search_queries (list): The list of search queries.
+    Returns:
+        list: The list of embeddings for the search queries.
+    """
+    embedding_response = client.embeddings.create(
+        model=OPENAI_EMBEDDING_MODEL,
+        input=search_queries
+    )
+    embeddings = [data.embedding for data in embedding_response.data]
+
+    return embeddings
+
+@retry_operation(max_retries=3)
+def query_pinecone_index(pinecone_index: Pinecone.Index, embedding: list, k: int) -> dict:
+    """Function for querying the Pinecone index for similar documents.
+
+    This function queries the Pinecone index for similar documents based on the provided embedding.
+
+    Args:
+        pinecone_index (Pinecone.Index): The Pinecone index.
+        embedding (list): The embedding for the search query.
+        k (int): The number of similar documents to retrieve.
+    Returns:
+        dict: The results of the query.
+    """
+    results = pinecone_index.query(
+        vector=embedding,
+        top_k=k,
+        include_metadata=True
+    )
+
+    return results
+
 def format_citation_date(date_str) -> str:
     """Function for formatting the citation date.
 
@@ -208,6 +293,7 @@ def lambda_handler(event, context):
         if not aws_parameters:
             raise ValueError("AWS parameters are required in the request body")
 
+        logger.info("Received request to get similar documents for message: %s", message)
         api_parameters = get_api_parameters(aws_parameters)
         openai_client = OpenAI(api_key=api_parameters["openai_api_key"], organization=api_parameters["openai_org_id"])
         pinecone_index = init_pinecone_index(
@@ -215,9 +301,12 @@ def lambda_handler(event, context):
             pinecone_env=api_parameters["pinecone_env"],
             pinecone_index=api_parameters["pinecone_index"]
         )
+        logger.info("Initialized OpenAI client and Pinecone index")
 
         # Preprocess the message and create the search queries.
+        logger.info("Preprocessing the message and creating search queries")
         enhanced_message = preprocess_message(message)
+        logger.info(f"Preprocessing was successful!. Enhanced message:\n\n{enhanced_message}")
         search_queries = [
             f"Seligman theory research findings {enhanced_message}",
             f"Seligman psychological concepts methodology {enhanced_message}",
@@ -225,28 +314,39 @@ def lambda_handler(event, context):
             f"Seligman psychology contributions development {enhanced_message}"
         ]
 
-        all_results = []
-        for search_query in search_queries:
-            embedding_response = openai_client.embeddings.create(
-                model=OPENAI_EMBEDDING_MODEL,
-                input=search_query
-            )["data"][0]["embedding"]
-            embedding = embedding_response.data[0].embedding
+        logger.info("Getting embeddings for the search queries from OpenAI.")
+        try:
+            embeddings = get_embeddings_batch(openai_client, search_queries)
+        except Exception as e:
+            logger.exception("An error occurred while getting embeddings from OpenAI: %s", e)
+            raise RuntimeError("An error occurred while getting embeddings from OpenAI.") from e
+        logger.info("Embeddings retrieval was successful!")
 
-            results = pinecone_index.query(
-                vector=embedding,
-                top_k=k,
-                include_metadata=True
-            )
-            all_results.extend(results["matches"])
+
+        logger.info("Querying the Pinecone index for similar documents.")
+        all_results = []
+        for idx, embedding in enumerate(embeddings):
+            try:
+                results = query_pinecone_index(pinecone_index, embedding, k)
+                all_results.extend(results["matches"])
+
+                # Add a 500ms delay between queries to avoid rate limiting
+                if idx < len(embeddings) - 1:
+                    time.sleep(0.5)
+            except Exception as e:
+                logger.exception("An error occurred while querying the Pinecone index for query %s: %s", idx+1, e)
+                raise RuntimeError("An error occurred while querying the Pinecone index.") from e
+        logger.info("Querying the Pinecone index was successful!")
 
         # Use title as a key for deduplication
+        logger.info("Deduplicating the similar documents based on the title")
         seen_titles = {}
         for match in all_results:
             title = match["metadata"].get("title", "").strip()
             if title not in seen_titles or match["score"] > seen_titles[title]["score"]:
-                author = match['metadata'].get('Author', 'Unknown')
-                year = format_citation_date(match['metadata'].get('Year', 'n.d.'))
+                logger.info(f"Match for title:\n{match['metadata']}")
+                author = match['metadata'].get('author', 'Unknown')
+                year = format_citation_date(match['metadata'].get('year', 'n.d.'))
 
                 seen_titles[title] = {
                     'score': match['score'],
@@ -257,10 +357,11 @@ def lambda_handler(event, context):
                         'title': title
                     }
                 }
+        logger.info("Deduplication was successful!")
 
         # Sort by score and create sequential citations
+        logger.info("Sorting the similar documents by score and creating sequential citations")
         sorted_results = sorted(seen_titles.values(), key=lambda x: x['score'], reverse=True)[:k]
-
         citations = {}
         final_results = []
         for idx, result in enumerate(sorted_results, 1):
@@ -273,7 +374,9 @@ def lambda_handler(event, context):
                 'content': result['content'],
                 'citation_id': citation_id
             })
+        logger.info("Sorting and citation creation was successful!")
 
+        logger.info("Returning response to the client.")
         return {
             "statusCode": 200,
             "headers": CORS_HEADERS,

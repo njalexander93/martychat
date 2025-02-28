@@ -254,7 +254,8 @@ def generate_response(request: ChatRequest, user_id: str = Depends(verify_token)
                 "Accept": "*/*"
             }
         )
-        results = response.json().get("results")
+        logger.info(f"Response from Lambda: {response.json()}")
+        results = response.json()
         if not results:
             logger.error("Error getting similar documents from Lambda.")
             raise RuntimeError("Error getting similar documents from Lambda.")
@@ -262,22 +263,40 @@ def generate_response(request: ChatRequest, user_id: str = Depends(verify_token)
         logger.error(f"Error getting similar documents: {str(e)}")
         raise HTTPException(status_code=500, detail="Error getting similar documents")
 
-    # # Extract content and citations
-    # contexts = []
-    # citations = results["citations"]
-    # for match in results["matches"]:
-    #     if match["score"] >= 0.45:
-    #         contexts.append(f"{match['content']} {match['citation_id']}")
-    # combined_context = "\n\n".join(contexts)
+    # Extract content and citations
+    try:
+        contexts = []
+        citations = results["citations"]
+        for match in results["matches"]:
+            if match["score"] >= 0.45:
+                contexts.append(f"{match['content']} {match['citation_id']}")
+        combined_context = "\n\n".join(contexts)
+    except KeyError as e:
+        logger.error(f"Unable to locate '{str(e)}' in the response from Lambda.")
+        raise HTTPException(status_code=500, detail="Error extracting content and citations")
 
-    # # TODO: Move to S3 maybe?
-    # system_prompt =  "You are a knowledgeable assistant providing cited responses."
-    # system_prompt += "\nWhen answering:"
-    # system_prompt += "\n    1. Use inline citations [1], [2], etc. when referencing specific information."
-    # system_prompt += "\n    2. Include a References section at the end listing all cited sources."
-    # system_prompt += "\n    3. Ensure every citation in the text corresponds to a reference."
-    # system_prompt += "\n    4. Maintain a professional, academic tone"
-    # system_prompt += "\n    5. Consider the conversation history for context"
-    # system_prompt += "\n    6. Maintain continuity with previous responses"
+    # Generate a response with citations
+    try:
+        generate_response_with_citations_lambda_url = f"{lambda_url}/api/v1/generate-response-with-citations"
+        logger.info(f"Querying {generate_response_with_citations_lambda_url}.")
+        response = requests.post(
+            generate_response_with_citations_lambda_url,
+            json={
+                "message": enhanced_message,
+                "context": combined_context,
+                "citations": citations,
+                "aws_parameters": {
+                    "api_secrets_param": api_secrets_param
+                }
+            },
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "*/*"
+            }
+        )
+        results = response.json()
 
-    return dict(response=f"Found matches and citations based on your message:\n\Matches:\n{results["matches"]}\n\nCitations:\n{results["citations"]}")
+        return {"response": results["response"]}
+    except Exception as e:
+        logger.error(f"Error generating response: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error generating response")
