@@ -10,6 +10,7 @@ Globals:
     Runtime: python3.12
     Environment:
       Variables:
+        ENV: development
         NEXT_PUBLIC_FRONTEND_URL: "http://localhost:3000"
         NEXT_PUBLIC_API_URL: "http://localhost:8000"
         NEXT_PUBLIC_LAMBDA_URL: "http://localhost:9000"
@@ -20,6 +21,7 @@ Globals:
         COGNITO_USER_PARAM: "/martychat/dev/cognito_user_pool_id"
         COGNITO_CLIENT_PARAM: "/martychat/dev/cognito_app_client_id"
         INFRA_SECRETS_PARAM: "/martychat/secrets/infrastructure_keys_dev"
+        DYNAMODB_USER_TABLE_PARAM: "/martychat/dev/dynamodb_user_table"
   Api:
     Auth:
       DefaultAuthorizer: NONE  # Allow unauthenticated access
@@ -88,3 +90,91 @@ Resources:
             Method: POST
             Auth:
               Authorizer: NONE  # Allow unauthenticated access for login
+
+  TokenRefreshFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: token_refresh.lambda_handler
+      CodeUri: ../lambda/
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:InitiateAuth
+                - cognito-idp:DescribeUserPool
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+              Resource:
+                - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/martychat/dev/cognito_user_pool_id'
+                - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/martychat/dev/cognito_app_client_id'
+                - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/martychat/secrets/infrastructure_keys_dev'
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: '*'
+      Events:
+        TokenRefreshApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: "/api/auth/refresh"
+            Method: POST
+            Auth:
+              Authorizer: NONE  # Allow unauthenticated access for token refresh
+
+  AnalyzeQueryComplexity:
+      Type: AWS::Serverless::Function
+      Properties:
+        Handler: analyze_query_complexity.lambda_handler
+        CodeUri: ../lambda/
+        Policies:
+          - AWSLambdaBasicExecutionRole
+        Events:
+          AnalyzeQueryComplexityApiEvent:
+            Type: Api
+            Properties:
+              RestApiId: !Ref ApiGateway
+              Path: "/api/v1/analyze-query-complexity"
+              Method: POST
+              Auth:
+                Authorizer: NONE  # Allow unauthenticated access for query complexity analysis
+
+  GetSimilarDocuments:
+      Type: AWS::Serverless::Function
+      Properties:
+        Handler: get_similar_documents.lambda_handler
+        CodeUri: ../lambda/
+        Timeout: 30
+        Policies:
+          - AWSLambdaBasicExecutionRole
+        Events:
+          GetSimilarDocumentsApiEvent:
+            Type: Api
+            Properties:
+              RestApiId: !Ref ApiGateway
+              Path: "/api/v1/get-similar-documents"
+              Method: POST
+              Auth:
+                Authorizer: NONE  # Allow unauthenticated access for query complexity analysis
+
+  GenerateResponseWithCitations:
+      Type: AWS::Serverless::Function
+      Properties:
+        Handler: generate_response_with_citations.lambda_handler
+        CodeUri: ../lambda/
+        Timeout: 60
+        Policies:
+          - AWSLambdaBasicExecutionRole
+        Events:
+          GenerateResponseWithCitationsApiEvent:
+            Type: Api
+            Properties:
+              RestApiId: !Ref ApiGateway
+              Path: "/api/v1/generate-response-with-citations"
+              Method: POST
+              Auth:
+                Authorizer: NONE  # Allow unauthenticated access for query complexity analysis
