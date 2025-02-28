@@ -15,7 +15,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import AuthenticationForm from "../../components/authentication_layout";
+import AuthenticationForm from "@/components/AuthenticationForm";
 import sanitizeHtml from "sanitize-html";
 
 /**
@@ -78,12 +78,26 @@ export default function Login() {
       // Store the authentication tokens in local storage
       if (data.authenticationResult) {
         // Store the tokens in local storage
-        localStorage.setItem("idToken", data.authenticationResult.idToken); // ID token for authentication
-        localStorage.setItem("accessToken", data.authenticationResult.accessToken); // Access token for API requests
-        localStorage.setItem("refreshToken", data.authenticationResult.refreshToken); // Refresh token for refreshing the ID token
+        localStorage.setItem("idToken", data.authenticationResult.IdToken); // ID token for authentication
+        localStorage.setItem("accessToken", data.authenticationResult.AccessToken); // Access token for API requests
+        localStorage.setItem("refreshToken", data.authenticationResult.RefreshToken); // Refresh token for refreshing the ID token
+
+        // Store the user ID in the session storage to be used for authentication of API requests.
+        window.sessionStorage.setItem("userId", data.authenticationResult.UserId);
+
+        // Calculate the token expiration times
+        const now = new Date().getTime();
+        const idTokenExpires = now + (data.authenticationResult.IdTokenExpires * 1000);
+        const accessTokenExpires = now + (data.authenticationResult.AccessTokenExpires * 1000);
+        const refreshTokenExpires = now + (data.authenticationResult.RefreshTokenExpires * 1000);
+
+        // Store the token expiration times in local storage
+        localStorage.setItem("idTokenExpires", idTokenExpires);
+        localStorage.setItem("accessTokenExpires", accessTokenExpires);
+        localStorage.setItem("refreshTokenExpires", refreshTokenExpires);
 
         // Set the ID token in a cookie for middleware authentication.
-        document.cookie = `idToken=${data.authenticationResult.idToken}; path=/`;
+        document.cookie = `idToken=${data.authenticationResult.IdToken}; path=/`;
 
         // Get the callback URL if it exists
         const urlParams = new URLSearchParams(window.location.search);
@@ -146,7 +160,13 @@ export default function Login() {
         <div className="mb-4 text-center">
           {loginError && <p className="mb-2 text-sm text-red-600">{loginError}</p>} {/* Display the signup error message */}
         </div>
-        <button type="submit" className="w-full py-2 px-4 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 submit-button">
+        <button
+          type="submit"
+          className={`w-full py-2 px-4 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 submit-button ${
+            isLoading ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
+          disabled={isLoading}
+        >
           {isLoading ? 'Signing in...' : 'Sign In'}
         </button>
         <div className="text-center mt-4">

@@ -17,6 +17,9 @@ import datetime
 import logging
 import boto3
 import botocore.exceptions
+import base64
+import hmac
+import hashlib
 
 # Set up logging
 logging.basicConfig(
@@ -25,6 +28,8 @@ logging.basicConfig(
     handlers=[logging.StreamHandler()] # Only use StreamHandler for CloudWatch
 )
 logger = logging.getLogger(__name__)
+if os.getenv("ENV", "production") == "development":
+    logger.setLevel(logging.DEBUG)
 
 # Set the CORS headers for the response
 CORS_HEADERS = {
@@ -58,27 +63,72 @@ def get_user_pool_id() -> str:
 
     return cognito_user_pool_id
 
-def get_client_id() -> str:
+def get_client_metadata() -> dict:
     """Retrieve the AWS Cognito App Client ID from AWS Systems Manager Parameter Store.
 
     Returns:
-        str: The AWS Cognito App Client ID.
+        dict: The AWS Cognito App Client ID and Client Secret.
     """
     session = boto3.session.Session()
-    ssm = session.client("ssm")  # Client for AWS Systems Manager Parameter Store
+    secrets_manager = session.client("secretsmanager") # Client for AWS Secrets Manager
+    ssm = session.client("ssm") # Client for AWS Systems Manager Parameter Store
 
+    # Validate that the cognito client secret is set in the environment variables
+    infra_secret_param = os.getenv("INFRA_SECRETS_PARAM")
+    if not infra_secret_param:
+        logger.error("INFRA_SECRETS_PARAM environment variable is not set.")
+        raise RuntimeError("INFRA_SECRETS_PARAM environment variable is not set.")
+
+    # Get the Cognito client secret from AWS Secrets Manager
+    try:
+        secret_id = ssm.get_parameter(Name=infra_secret_param, WithDecryption=True)["Parameter"]["Value"]
+        secret_key = secrets_manager.get_secret_value(SecretId=secret_id)
+        secrets = json.loads(secret_key["SecretString"])
+
+        cognito_client_secret = secrets["cognito_client_secret"]
+        logging.info("Cognito client secret retrieved successfully!")
+    except Exception as e:
+        logging.exception("Error getting secrets from AWS Secrets Manager.")
+        raise RuntimeError("Error getting secrets from AWS Secrets Manager.") from e
+
+    # Validate that the cognito client secret is set in the environment variables
     cognito_client_param = os.getenv("COGNITO_CLIENT_PARAM")
     if not cognito_client_param:
         logger.error("COGNITO_CLIENT_PARAM environment variable is not set.")
         raise RuntimeError("COGNITO_CLIENT_PARAM environment variable is not set.")
 
+    # Get the Cognito client ID from AWS Systems Manager Parameter Store
     try:
         cognito_client_id = ssm.get_parameter(Name=cognito_client_param, WithDecryption=True)["Parameter"]["Value"]
     except Exception as e:
         logger.exception("Error getting Cognito Client ID from AWS Systems Manager Parameter Store.")
         raise RuntimeError("Error getting Cognito Client ID from AWS Systems Manager Parameter Store.") from e
 
-    return cognito_client_id
+    return {
+        "cognito_client_id": cognito_client_id,
+        "cognito_client_secret": cognito_client_secret
+    }
+
+def get_secret_hash(username: str, client_id: str, client_secret: str) -> str:
+    """Generate the secret hash for the AWS Cognito authentication request.
+
+    Args:
+        username (str): The username of the user signing in.
+        client_id (str): The client ID of the AWS Cognito app.
+        client_secret (str): The client secret of the AWS Cognito app.
+    Returns:
+        str: The secret hash for the authentication request.
+    """
+    logger.info(f"Generating secret hash for {username} with client ID {client_id}")
+    message = username + client_id
+
+    dig = hmac.new(
+        key=client_secret.encode("utf-8"),
+        msg=message.encode("utf-8"),
+        digestmod=hashlib.sha256
+    ).digest()
+
+    return base64.b64encode(dig).decode()
 
 def create_cognito_user(signup_parameters: dict) -> str:
     """Create a new user in the AWS Cognito user pool.
@@ -96,8 +146,11 @@ def create_cognito_user(signup_parameters: dict) -> str:
     email = signup_parameters["email"]
     password = signup_parameters["password"]
 
-    # Get the Cognito user pool ID from AWS Systems Manager Parameter Store.
-    user_pool_id = get_user_pool_id()
+    # Get the Cognito user pool ID, client ID, and client secret
+    cognito_client_metadata = get_client_metadata()
+    user_pool_id = get_user_pool_id()  # We still need this for logging/verification
+    client_id = cognito_client_metadata["cognito_client_id"]
+    client_secret = cognito_client_metadata["cognito_client_secret"]
 
     # Initialize the Cognito client
     try:
@@ -108,21 +161,49 @@ def create_cognito_user(signup_parameters: dict) -> str:
 
     try:
         # Create the new user in the Cognito user pool
+        temp_password = f"Temp1{os.urandom(8).hex()}"
+        secret_hash = get_secret_hash(email, client_id, client_secret)
+
         response = cognito_client.admin_create_user(
             UserPoolId=user_pool_id,
             Username=email,
-            TemporaryPassword=password,
+            TemporaryPassword=temp_password,
             UserAttributes=[{"Name": "email", "Value": email}],
             MessageAction="SUPPRESS",  # Prevents Cognito from sending an email to the user
         )
 
-        # Set the user's password to a permanent value
-        cognito_client.admin_set_user_password(
+        # Initiate authentication with the temporary password
+        auth_response = cognito_client.admin_initiate_auth(
             UserPoolId=user_pool_id,
-            Username=email,
-            Password=password,
-            Permanent=True
+            ClientId=client_id,
+            AuthFlow="ADMIN_NO_SRP_AUTH",
+            AuthParameters={
+                "USERNAME": email,
+                "PASSWORD": temp_password,
+                "SECRET_HASH": secret_hash
+            }
         )
+
+        # Set the user's password to a permanent value
+        try:
+            new_secret_hash = get_secret_hash(email, client_id, client_secret)
+            cognito_client.admin_respond_to_auth_challenge(
+                UserPoolId=user_pool_id,
+                ClientId=client_id,
+                ChallengeName=auth_response['ChallengeName'],
+                ChallengeResponses={
+                    'USERNAME': email,
+                    'NEW_PASSWORD': password,
+                    'SECRET_HASH': new_secret_hash
+                },
+                Session=auth_response['Session']
+            )
+        except cognito_client.exceptions.InvalidPasswordException as e:
+            # If setting the password fails, delete the user and raise the exception
+            cognito_client.admin_delete_user(UserPoolId=user_pool_id, Username=email)
+            if "Password has previously been used" in str(e):
+                logger.error("This password has been previously used for this account.")
+                raise RuntimeError("This password has been previously used for this account.")
     except cognito_client.exceptions.UsernameExistsException:
         logger.error("User already exists.")
         raise RuntimeError("User already exists.")

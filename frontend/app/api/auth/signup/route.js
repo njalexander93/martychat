@@ -122,6 +122,7 @@ export async function POST(request) {
         const data = await response.json();
 
         if (!response.ok) {
+            // Handles authenication error when accessing the create-user Lambda function
             if (response.status === 403) {
                 console.error("Authentication Error:", data.message);
                 return new Response(JSON.stringify({ error: "Authentication error." }), {
@@ -129,6 +130,16 @@ export async function POST(request) {
                     headers: CORS_HEADERS
                 });
             }
+            // Handles error when the user has previously existed and the password has been associated with the account.
+            else if (data.error && data.error.includes("Password has previously been used")) {
+                return new Response(JSON.stringify({
+                    error: "This password has been previously used for an account with this email address."
+                }), {
+                    status: response.status,
+                    headers: CORS_HEADERS
+                });
+            }
+
             return new Response(JSON.stringify({ error: data.error || "Failed to sign up." }), {
                 status: response.status,
                 headers: CORS_HEADERS
