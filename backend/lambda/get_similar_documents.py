@@ -7,7 +7,7 @@ complexity of a message based on the number of unique words in the message. The 
 __author__ = ["Nikolai Alexander", "Doug Alexander"]
 __email__ = "njalexander93@gmail.com, dalexander61@gmail.com"
 __version__ = "1.0.0"
-__date__ = "TBD"
+__date__ = "2025-02-28"
 __license__ = "Proprietary"
 __copyright__ = "Copyright (c) 2025 MartyChat"
 

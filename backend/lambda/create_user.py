@@ -7,7 +7,7 @@ validates the request and creates a new user in the Cognito user pool.
 __author__ = "Nikolai Alexander"
 __email__ = "njalexander93@gmail.com"
 __version__ = "1.0.0"
-__date__ = "TBD"
+__date__ = "2025-02-28"
 __license__ = "Proprietary"
 __copyright__ = "Copyright (c) 2025 MartyChat"
 

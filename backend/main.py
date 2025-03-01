@@ -6,7 +6,7 @@ This module sets up the FastAPI application, including middleware and routes.
 __author__ = "Nikolai Alexander"
 __email__ = "njalexander93@gmail.com"
 __version__ = "1.0.1"
-__date__ = "TBD"
+__date__ = "2025-02-28"
 __license__ = "Proprietary"
 __copyright__ = "Copyright (c) 2025 MartyChat"
 

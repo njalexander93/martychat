@@ -1,4 +1,16 @@
+"""Lambda function to generate an enhanced response with citations
 
+This Lambda function generates an enhanced response to a user query by incorporating citations and a structured format.
+The response is designed to be professional, informative, and engaging. The function uses the OpenAI API to generate the
+response based on the provided context, message, and citations.
+"""
+
+__author__ = ["Nikolai Alexander", "Doug Alexander"]
+__email__ = "njalexander93@gmail.com, dalexander61@gmail.com"
+__version__ = "1.0.0"
+__date__ = "2025-02-28"
+__license__ = "Proprietary"
+__copyright__ = "Copyright (c) 2025 MartyChat"
 
 import os
 import json
