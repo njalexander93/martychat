@@ -1,4 +1,4 @@
-"""Lambda function to generate an enhanced response with citations
+"""Lambda function to generate an enhanced response with citations.
 
 This Lambda function generates an enhanced response to a user query by incorporating citations and a structured format.
 The response is designed to be professional, informative, and engaging. The function uses the OpenAI API to generate the
@@ -12,18 +12,19 @@ __date__ = "2025-02-28"
 __license__ = "Proprietary"
 __copyright__ = "Copyright (c) 2025 MartyChat"
 
-import os
 import json
 import logging
+import os
 import time
-from openai import OpenAI, APIError, RateLimitError, APIConnectionError
+
 import boto3
+from openai import APIConnectionError, APIError, OpenAI, RateLimitError
 
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[logging.StreamHandler()] # Only use StreamHandler for CloudWatch
+    handlers=[logging.StreamHandler()],  # Only use StreamHandler for CloudWatch
 )
 logger = logging.getLogger(__name__)
 if os.getenv("ENV", "production") == "development":
@@ -36,26 +37,13 @@ CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "OPTIONS, GET, POST, PUT, PATCH, DELETE",
     "Access-Control-Allow-Headers": "X-Requested-With, content-type",
-    "Access-Control-Allow-Credentials": "true"  # Required for credentials-based requests
+    "Access-Control-Allow-Credentials": "true",  # Required for credentials-based requests
 }
 
-# TODO: Move this all to S3
-ENHANCED_SYSTEM_PROMPT = """You are a knowledgeable assistant specializing in presenting research and academic work in a constructive and positive manner. When discussing Seligman's work:
-
-1. Focus on his contributions, insights, and the positive impact of his research
-2. Present his theories and findings in an appreciative, professional tone
-3. Use ONLY information provided in the context - do not reference external knowledge
-4. If asked about topics not covered in the provided context, politely indicate that the information is not available in the current document set
-5. Maintain academic rigor while highlighting the strengths and value of the work
-
-Format your response with:
-- Clear structure and logical flow
-- Professional, formal language
-- Full sentences and well-developed paragraphs
-- Proper citation integration
-"""
-
-PROMPT = "Based solely on the provided context, give a detailed and constructive response that highlights the value and contributions of the work. Do not include any information from outside the provided context."
+PROMPT = (
+    "Based solely on the provided context, give a detailed and constructive response that highlights the value "
+    + "and contributions of the work. Do not include any information from outside the provided context. "
+)
 
 REQUIREMENTS = """1. Draw exclusively from the provided context
 2. Present the information in a positive, appreciative manner
@@ -64,13 +52,16 @@ REQUIREMENTS = """1. Draw exclusively from the provided context
 5. If certain aspects cannot be addressed from the available context, acknowledge this professionally
 """
 
-def get_api_parameters(aws_parameters: str) -> dict:
+
+def get_api_parameters(aws_parameters: dict) -> dict:
     """Function for retrieving the OpenAI API key and organization ID from AWS Secrets Manager.
 
-    This function retrieves the OpenAI API key and organization ID from AWS Secrets Manager. The function assumes that the secrets are stored in the
+    This function retrieves the OpenAI API key and organization ID from AWS Secrets Manager. The function assumes that
+    the secrets are stored in the format of a JSON object with the keys "openai_api_key" and "openai_org_id".
 
     Args:
         aws_parameters (str): The AWS parameters containing the API secrets and Pinecone environment.
+
     Returns:
         dict: The OpenAI API key and organization ID.
     """
@@ -88,21 +79,20 @@ def get_api_parameters(aws_parameters: str) -> dict:
         secret_key = secrets_manager.get_secret_value(SecretId=secret_id)
         secrets = json.loads(secret_key["SecretString"])
 
-        return {
-            "openai_api_key": secrets["openai_api_key"],
-            "openai_org_id": secrets["openai_org_id"]
-        }
+        return {"openai_api_key": secrets["openai_api_key"], "openai_org_id": secrets["openai_org_id"]}
     except Exception as e:
         logger.exception("An error occurred while retrieving the API secrets: %s", e)
         raise RuntimeError("Failed to retrieve the API secrets.") from e
 
+
 def format_citations(citations: dict) -> str:
-    """Function for formatting citations in the prompt
+    """Function for formatting citations in the prompt.
 
     This function formats the citations with deduplication and clear formatting.
 
     Args:
         citations (dict): A dictionary of citations with citation IDs as keys and citation strings as values.
+
     Returns:
         str: The formatted citations.
     """
@@ -115,29 +105,54 @@ def format_citations(citations: dict) -> str:
 
     # Format citations using only unique sources
     formatted_citations = []
-    for source_key, cid in unique_sources.items():
+    for _, cid in unique_sources.items():
         original_source = citations[cid]
         formatted_citations.append(f"{cid}: {original_source}")
 
     return "\n".join(formatted_citations)
 
+
+def get_enhanced_system_prompt() -> str:
+    """Function for getting the enhanced system prompt from AWS S3.
+
+    This function retrieves the enhanced system prompt from AWS S3. The prompt is used to provide additional context
+    to the OpenAI API for generating responses.
+
+    Returns:
+        str: The enhanced system prompt.
+    """
+    session = boto3.session.Session()
+    s3 = session.client("s3")
+
+    bucket_name = os.getenv("S3_PROMPTS_BUCKET")
+    if not bucket_name:
+        raise RuntimeError("S3_PROMPTS_BUCKET environment variable is required.")
+
+    try:
+        response = s3.get_object(Bucket=bucket_name, Key="marty.txt")
+        enhanced_prompt = response["Body"].read().decode("utf-8")
+        logger.info("Successfully retrieved the enhanced system prompt from S3.")
+        return enhanced_prompt
+    except Exception as e:
+        logger.exception("An error occurred while retrieving the enhanced system prompt: %s", e)
+        raise RuntimeError("Failed to retrieve the enhanced system prompt.") from e
+
+
 def get_openai_response(client: OpenAI, prompt: str, citations: dict) -> str:
-    """Function to generate a response from the OpenAI API
+    """Function to generate a response from the OpenAI API.
 
     This function generates a response from the OpenAI API based on the provided prompt.
 
     Args:
         client (OpenAI): The OpenAI API client.
         prompt (str): The prompt to send to the OpenAI API.
+        citations (dict): A dictionary of citations with citation IDs as keys and citation strings as values.
+
     Returns:
         str: The response generated by the OpenAI API.
     """
-
     # Create the messages for the OpenAI API
-    messages = [
-        {"role": "system", "content": ENHANCED_SYSTEM_PROMPT},
-        {"role": "user", "content": prompt}
-    ]
+    messages = [{"role": "system", "content": get_enhanced_system_prompt()}, {"role": "user", "content": prompt}]
 
     # Format the citations for inclusion in the response
     citations_text = ""
@@ -151,11 +166,7 @@ def get_openai_response(client: OpenAI, prompt: str, citations: dict) -> str:
     while retry_count <= max_retries:
         try:
             # Send the request to the OpenAI API and get the response.
-            response = client.chat.completions.create(
-                model="gpt-4",
-                messages=messages,
-                temperature=0.7
-            )
+            response = client.chat.completions.create(model="gpt-4", messages=messages, temperature=0.7)
             response_text = response.choices[0].message.content
 
             # Add the citations to the response if they are not already present in the response.
@@ -168,13 +179,21 @@ def get_openai_response(client: OpenAI, prompt: str, citations: dict) -> str:
             if retry_count >= max_retries:
                 raise e
 
-            wait_time = 2 ** retry_count
-            logger.warning("Hit a %s error while trying to get a response from OpenAI. Retrying in %s seconds.", e.__class__.__name__, wait_time)
+            wait_time = 2**retry_count
+            logger.warning(
+                "Hit a %s error while trying to get a response from OpenAI. Retrying in %s seconds.",
+                e.__class__.__name__,
+                wait_time,
+            )
             logger.warning("Error message: %s", e)
             time.sleep(wait_time)
 
-def lambda_handler(event, context):
-    """Function to generate an enhanced response that handles conversation flow
+    # Fallback to ensure the function always returns if we've exhausted all retries or other unexpected issues
+    raise RuntimeError("Failed to get a response from OpenAI after multiple attempts")
+
+
+def lambda_handler(event: dict, context: object) -> dict:
+    """Function to generate an enhanced response that handles conversation flow.
 
     This function generates an enhanced response to a user query by incorporating citations and a structured format. The
     response is designed to be professional, informative, and engaging.
@@ -182,6 +201,7 @@ def lambda_handler(event, context):
     Args:
         event (dict): The event data passed to the Lambda function.
         context (object): The runtime information of the Lambda function.
+
     Returns:
         dict: The response data to return to the user.
     """
@@ -208,22 +228,14 @@ def lambda_handler(event, context):
 
         try:
             response = get_openai_response(openai_client, prompt, citations)
-            return {
-                "statusCode": 200,
-                "headers": CORS_HEADERS,
-                "body": json.dumps({"response": response})
-            }
+            return {"statusCode": 200, "headers": CORS_HEADERS, "body": json.dumps({"response": response})}
         except RateLimitError as e:
             logger.error("Rate limit exceeded while generating the response: %s", e)
             return {
                 "statusCode": 429,
                 "headers": CORS_HEADERS,
-                "body": json.dumps({"error": "Rate limit exceeded. Please try again later."})
+                "body": json.dumps({"error": "Rate limit exceeded. Please try again later."}),
             }
     except Exception as e:
         logger.error("An error occurred while generating the response: %s", e)
-        return {
-            "statusCode": 500,
-            "headers": CORS_HEADERS,
-            "body": json.dumps({"error": str(e)})
-        }
+        return {"statusCode": 500, "headers": CORS_HEADERS, "body": json.dumps({"error": str(e)})}

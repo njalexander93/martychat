@@ -1,0 +1,102 @@
+[tool.poetry]
+name = "martychat"
+version = "0.1.0"
+description = "MartyChat application"
+authors = ["Nikolai <njalexander93@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.4"
+pytest-cov = "^6.0.0"
+pytest-mock = "^3.14.0"
+ruff = "^0.9.3"
+
+[tool.ruff]
+# Line length configuration
+line-length = 120
+# Assume Python 3.12
+target-version = "py312"
+# Exclude a variety of commonly ignored directories
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "build",
+    "dist",
+    "sam"
+]
+# Enable linting rules for Google style guide
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "B",   # flake8-bugbear
+    "I",   # isort
+    "N",   # pep8-naming
+    "W",   # pycodestyle warnings
+    "D",   # pydocstyle
+    "UP",  # pyupgrade
+    "ANN", # flake8-annotations
+    "C",   # flake8-comprehensions
+    "SIM", # flake8-simplify
+    "TCH", # type-checking
+    "RUF", # Ruff-specific rules
+]
+# Ignore rules that conflict with Google style or other tools
+ignore = [
+    "E203",  # Whitespace before ':'
+    "UP037",  # Line break before binary operator (was W503)
+    "D203",  # one-blank-line-before-class (conflicts with D211)
+    "D212",  # multi-line-summary-first-line (conflicts with Google style)
+    "D107",  # Missing docstring in __init__ (Google style allows this)
+    "ANN101", # Missing type annotation for `self` (not required by Google)
+    "ANN102", # Missing type annotation for `cls` (not required by Google)
+]
+# Enable auto-fixing of errors where possible
+fix = true
+
+[tool.ruff.pydocstyle]
+# Use Google-style docstrings
+convention = "google"
+
+[tool.ruff.mccabe]
+# Complexity level of 10
+max-complexity = 10
+
+[tool.ruff.isort]
+known-first-party = ["backend"]
+known-third-party = ["boto3", "fastapi", "uvicorn", "pytest"]
+# Google style guide preferences for imports
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
+combine-as-imports = true
+
+[tool.ruff.flake8-quotes]
+docstring-quotes = "double"
+
+[tool.ruff.format]
+# Use double quotes for strings (Google preference)
+quote-style = "double"
+# Indent with 4 spaces (Google style)
+indent-style = "space"
+line-ending = "auto"
+skip-magic-trailing-comma = false
+docstring-code-format = true
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+markers = [
+    "unit: mark a test as a unit test",
+    "integration: mark a test as an integration test",
+    "slow: mark a test as slow",
+]
+addopts = "--verbose"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]

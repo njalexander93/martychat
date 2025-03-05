@@ -76,7 +76,6 @@ env.json
 .aws/
 config/
 credentials/
-backend/lambda/requirements.txt
 
 # Terraform and CloudFormation state files
 terraform.tfstate

@@ -11,20 +11,21 @@ __date__ = "2025-02-28"
 __license__ = "Proprietary"
 __copyright__ = "Copyright (c) 2025 MartyChat"
 
-import os
+import base64
+import hashlib
+import hmac
 import json
 import logging
+import os
+
 import boto3
 import botocore.exceptions
-import base64
-import hmac
-import hashlib
 
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[logging.StreamHandler()]  # Only use StreamHandler for CloudWatch
+    handlers=[logging.StreamHandler()],  # Only use StreamHandler for CloudWatch
 )
 logger = logging.getLogger(__name__)
 if os.getenv("ENV", "production") == "development":
@@ -37,8 +38,9 @@ CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "OPTIONS, GET, POST, PUT, PATCH, DELETE",
     "Access-Control-Allow-Headers": "X-Requested-With, content-type",
-    "Access-Control-Allow-Credentials": "true"  # Required for credentials-based requests
+    "Access-Control-Allow-Credentials": "true",  # Required for credentials-based requests
 }
+
 
 def get_user_pool_id() -> str:
     """Retrieve the AWS Cognito User Pool ID from AWS Systems Manager Parameter Store.
@@ -47,7 +49,7 @@ def get_user_pool_id() -> str:
         str: The AWS Cognito User Pool ID.
     """
     session = boto3.session.Session()
-    ssm = session.client("ssm") # Client for AWS Systems Manager Parameter Store
+    ssm = session.client("ssm")  # Client for AWS Systems Manager Parameter Store
 
     cognito_user_param = os.getenv("COGNITO_USER_PARAM")
     if not cognito_user_param:
@@ -62,6 +64,7 @@ def get_user_pool_id() -> str:
 
     return cognito_user_pool_id
 
+
 def get_client_metadata() -> dict:
     """Retrieve the AWS Cognito App Client ID from AWS Systems Manager Parameter Store.
 
@@ -69,8 +72,8 @@ def get_client_metadata() -> dict:
         dict: The AWS Cognito App Client ID and Client Secret.
     """
     session = boto3.session.Session()
-    secrets_manager = session.client("secretsmanager") # Client for AWS Secrets Manager
-    ssm = session.client("ssm") # Client for AWS Systems Manager Parameter Store
+    secrets_manager = session.client("secretsmanager")  # Client for AWS Secrets Manager
+    ssm = session.client("ssm")  # Client for AWS Systems Manager Parameter Store
 
     # Validate that the cognito client secret is set in the environment variables
     infra_secret_param = os.getenv("INFRA_SECRETS_PARAM")
@@ -80,7 +83,7 @@ def get_client_metadata() -> dict:
 
     # Get the Cognito client secret from AWS Secrets Manager
     try:
-        secret_id = ssm.get_parameter(Name=os.getenv("INFRA_SECRETS_PARAM"), WithDecryption=True)["Parameter"]["Value"]
+        secret_id = ssm.get_parameter(Name=infra_secret_param, WithDecryption=True)["Parameter"]["Value"]
         secret_key = secrets_manager.get_secret_value(SecretId=secret_id)
         secrets = json.loads(secret_key["SecretString"])
 
@@ -103,10 +106,8 @@ def get_client_metadata() -> dict:
         logger.exception("Error getting Cognito Client ID from AWS Systems Manager Parameter Store.")
         raise RuntimeError("Error getting Cognito Client ID from AWS Systems Manager Parameter Store.") from e
 
-    return {
-        "cognito_client_id": cognito_client_id,
-        "cognito_client_secret": cognito_client_secret
-    }
+    return {"cognito_client_id": cognito_client_id, "cognito_client_secret": cognito_client_secret}
+
 
 def get_secret_hash(username: str, client_id: str, client_secret: str) -> str:
     """Generate the secret hash for the AWS Cognito authentication request.
@@ -115,47 +116,47 @@ def get_secret_hash(username: str, client_id: str, client_secret: str) -> str:
         username (str): The username of the user signing in.
         client_id (str): The client ID of the AWS Cognito app.
         client_secret (str): The client secret of the AWS Cognito app.
+
     Returns:
         str: The secret hash for the authentication request.
     """
     logger.info(f"Generating secret hash for {username} with client ID {client_id}")
     message = username + client_id
 
-    dig = hmac.new(
-        key=client_secret.encode("utf-8"),
-        msg=message.encode("utf-8"),
-        digestmod=hashlib.sha256
-    ).digest()
+    dig = hmac.new(key=client_secret.encode("utf-8"), msg=message.encode("utf-8"), digestmod=hashlib.sha256).digest()
 
     return base64.b64encode(dig).decode()
 
-def get_user_id(cognito_client, access_token: str) -> str:
+
+def get_user_id(cognito_client: boto3.client, access_token: str) -> str:
     """Get the userID from the AWS Cognito user pool using the access token.
 
     Args:
         cognito_client (boto3.client): The AWS Cognito client.
         access_token (str): The access token for the user.
+
     Returns:
         str: The user ID of the authenticated user.
     """
     try:
         response = cognito_client.get_user(AccessToken=access_token)
 
-        userId = None
+        user_id = None
         for attribute in response["UserAttributes"]:
             if attribute["Name"] == "sub":
-                userId = attribute["Value"]
+                user_id = attribute["Value"]
 
-        if not userId:
+        if not user_id:
             logger.error("User ID not found in Cognito response.")
             raise RuntimeError("User ID not found in Cognito response.")
 
-        return userId
+        return user_id
     except Exception as e:
         logger.exception("Error getting user ID from AWS Cognito.")
         raise RuntimeError("Error getting user ID from AWS Cognito.") from e
 
-def lambda_handler(event, context):
+
+def lambda_handler(event: dict, context: object) -> dict:
     """Lambda handler for signing in a user to AWS Cognito.
 
     This function processes a request from the sign in page to authenticate a user in the AWS Cognito user pool. The
@@ -165,12 +166,13 @@ def lambda_handler(event, context):
     Args:
         event (dict): The event data passed to the Lambda function.
         context (object): The runtime information of the Lambda function.
+
     Returns:
         dict: The response data to return from the Lambda function.
     """
     try:
         logger.info("Received sign-in request")
-        logger.info(f"Event: {json.dumps(event)}")
+        logger.info("Event: %s", json.dumps(event))
 
         # Retrieve the request body from the event data
         body = json.loads(event["body"])
@@ -182,7 +184,7 @@ def lambda_handler(event, context):
             return {
                 "statusCode": 400,
                 "headers": CORS_HEADERS,
-                "body": json.dumps({"error": "Email and password are required."})
+                "body": json.dumps({"error": "Email and password are required."}),
             }
 
         # Get the Cognito user pool ID, client ID, and client secret
@@ -195,23 +197,19 @@ def lambda_handler(event, context):
         secret_hash = get_secret_hash(email, client_id, client_secret)
 
         # Create a client for the AWS Cognito service
-        cognito_client = boto3.client("cognito-idp", region_name=os.getenv("AWS_REGION", "us-east-1"))
+        cognito_client = boto3.client("cognito-idp", region_name=os.getenv("REGION_NAME", "us-east-1"))
 
         try:
             logger.info("Initiating Cognito authentication")
             response = cognito_client.initiate_auth(
                 ClientId=client_id,
                 AuthFlow="USER_PASSWORD_AUTH",
-                AuthParameters={
-                    "USERNAME": email,
-                    "PASSWORD": password,
-                    "SECRET_HASH": secret_hash
-                }
+                AuthParameters={"USERNAME": email, "PASSWORD": password, "SECRET_HASH": secret_hash},
             )
         except cognito_client.exceptions.NotAuthorizedException as e:
             error_msg = str(e)
-            logger.error(f"NotAuthorizedException details: {error_msg}")
-            logger.error(f"Client ID used: {client_id}")
+            logger.error("NotAuthorizedException details: %s", error_msg)
+            logger.error("Client ID used: %s", client_id)
 
             # Check if there are any specific error indicators
             if "password" in error_msg.lower():
@@ -223,21 +221,17 @@ def lambda_handler(event, context):
             return {
                 "statusCode": 401,
                 "headers": CORS_HEADERS,
-                "body": json.dumps({"error": "Incorrect username or password."})
+                "body": json.dumps({"error": "Incorrect username or password."}),
             }
         except cognito_client.exceptions.UserNotFoundException:
             logger.error("User does not exist.")
-            return {
-                "statusCode": 404,
-                "headers": CORS_HEADERS,
-                "body": json.dumps({"error": "User does not exist."})
-            }
+            return {"statusCode": 404, "headers": CORS_HEADERS, "body": json.dumps({"error": "User does not exist."})}
         except botocore.exceptions.ClientError as e:
             logger.exception("Error authenticating user.")
             return {
                 "statusCode": 500,
                 "headers": CORS_HEADERS,
-                "body": json.dumps({"error": f"Error authenticating user: {str(e)}"})
+                "body": json.dumps({"error": f"Error authenticating user: {e!s}"}),
             }
 
         # Get the user ID from the access token.
@@ -249,7 +243,7 @@ def lambda_handler(event, context):
             return {
                 "statusCode": 500,
                 "headers": CORS_HEADERS,
-                "body": json.dumps({"error": f"Error getting user ID from AWS Cognito: {str(e)}"})
+                "body": json.dumps({"error": f"Error getting user ID from AWS Cognito: {e!s}"}),
             }
 
         logger.info(f"AuthenticationResult: {response['AuthenticationResult']}")
@@ -262,28 +256,27 @@ def lambda_handler(event, context):
         authentication_result["IdTokenExpires"] = response["AuthenticationResult"].get("ExpiresIn")
         authentication_result["AccessTokenExpires"] = response["AuthenticationResult"].get("ExpiresIn")
         try:
-            user_pool_response = cognito_client.describe_user_pool(
-                UserPoolId=user_pool_id
+            user_pool_response = cognito_client.describe_user_pool(UserPoolId=user_pool_id)
+            refresh_token_validity = user_pool_response["UserPool"]["Policies"]["PasswordPolicy"].get(
+                "RefreshTokenValidity", 30
             )
-            refresh_token_validity = user_pool_response["UserPool"]["Policies"]["PasswordPolicy"].get("RefreshTokenValidity", 30)
             authentication_result["RefreshTokenExpires"] = refresh_token_validity * 24 * 60 * 60
         except Exception as e:
-                logger.warning(f"Could not get refresh token validity: {str(e)}")
-                # Default to 30 days if we can't get the actual value
-                authentication_result["refreshTokenExpires"] = 30 * 24 * 60 * 60
+            logger.warning(f"Could not get refresh token validity: {e!s}")
+            # Default to 30 days if we can't get the actual value
+            authentication_result["refreshTokenExpires"] = 30 * 24 * 60 * 60
 
         return {
             "statusCode": 200,
             "headers": CORS_HEADERS,
-            "body": json.dumps({
-                "message": "User authenticated successfully.",
-                "authenticationResult": authentication_result
-            })
+            "body": json.dumps(
+                {"message": "User authenticated successfully.", "authenticationResult": authentication_result}
+            ),
         }
     except Exception as e:
         logger.exception("Error signing in user.")
         return {
             "statusCode": 500,
             "headers": CORS_HEADERS,
-            "body": json.dumps({"error": f"Error signing in user: {str(e)}"})
+            "body": json.dumps({"error": f"Error signing in user: {e!s}"}),
         }

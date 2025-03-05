@@ -1,1 +1,1 @@
-from .marty import generate_response
+"""Package for the Marty chatbot backend."""
