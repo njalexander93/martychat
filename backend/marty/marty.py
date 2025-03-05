@@ -21,7 +21,7 @@ from typing import Any
 import boto3
 import jwt
 import requests
-from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey, RSAPublicKey
 from dotenv import load_dotenv
 from fastapi import APIRouter, HTTPException, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -108,10 +108,11 @@ def decode_token(token: str, header: dict, cognito_client_id: str, cognito_user_
 
     if isinstance(key, RSAPrivateKey):
         raise ValueError("Expected RSA public key, but got RSA private key.")
+    public_key: RSAPublicKey = key
 
     decoded_token = jwt.decode(
         token,
-        key=jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(key)),
+        key=jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(public_key)),
         algorithms=["RS256"],
         audience=cognito_client_id,
     )
