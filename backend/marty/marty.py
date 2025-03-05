@@ -21,6 +21,7 @@ from typing import Any
 import boto3
 import jwt
 import requests
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from dotenv import load_dotenv
 from fastapi import APIRouter, HTTPException, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -104,6 +105,9 @@ def decode_token(token: str, header: dict, cognito_client_id: str, cognito_user_
             break
     if not key:
         raise HTTPException(status_code=403, detail="Invalid token key.")
+
+    if isinstance(key, RSAPrivateKey):
+        raise ValueError("Expected RSA public key, but got RSA private key.")
 
     decoded_token = jwt.decode(
         token,
