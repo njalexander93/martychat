@@ -16,12 +16,12 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import json
-from typing import Any
+from typing import Any, cast
 
 import boto3
 import jwt
 import requests
-from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey, RSAPublicKey
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from dotenv import load_dotenv
 from fastapi import APIRouter, HTTPException, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -98,7 +98,7 @@ def decode_token(token: str, header: dict, cognito_client_id: str, cognito_user_
         set_cognito_public_keys(aws_region, cognito_user_pool_id)
 
     # Find the key that matches the token in the public keys and decode the token
-    key = None
+    key: dict[str, Any] | RSAPublicKey | None = None
     for k in COGNITO_PUBLIC_KEYS:
         if k.get("kid") == header.get("kid"):
             key = k
@@ -106,13 +106,15 @@ def decode_token(token: str, header: dict, cognito_client_id: str, cognito_user_
     if not key:
         raise HTTPException(status_code=403, detail="Invalid token key.")
 
-    if isinstance(key, RSAPrivateKey):
-        raise ValueError("Expected RSA public key, but got RSA private key.")
-    public_key: RSAPublicKey = key
+    if isinstance(key, dict):
+        key = cast(RSAPublicKey, jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(key)))
+
+    if not isinstance(key, RSAPublicKey):
+        raise ValueError("Key must be an RSA public key.")
 
     decoded_token = jwt.decode(
         token,
-        key=jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(public_key)),
+        key=key,
         algorithms=["RS256"],
         audience=cognito_client_id,
     )
