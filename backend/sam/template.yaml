@@ -105,6 +105,23 @@ Resources:
             Auth:
               Authorizer: NONE
 
+  DeleteUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: delete_user.lambda_handler
+      CodeUri: ../lambda/
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Events:
+        DeleteUserEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: "/api/auth/delete-user"
+            Method: POST
+            Auth:
+              Authorizer: NONE
+
   SignInFunction:
     Type: AWS::Serverless::Function
     Properties:

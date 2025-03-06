@@ -224,10 +224,18 @@ def add_user_to_dynamodb(signup_parameters: dict) -> None:
         RuntimeError: An error occurred initializing the DynamoDB client.
         RuntimeError: An error occurred adding the user to the DynamoDB table.
     """
+    ssm = boto3.client("ssm")  # Client for AWS Secrets Manager
+
     # Initialize the DynamoDB client
     try:
+        dynamodb_user_table_param = os.getenv("DYNAMODB_USER_TABLE_PARAM")
+        if not dynamodb_user_table_param:
+            logger.error("DYNAMODB_TABLE_NAME environment variable is not set.")
+            raise RuntimeError("DYNAMODB_TABLE_NAME environment variable is not set.")
+
+        table_name = ssm.get_parameter(Name=dynamodb_user_table_param)["Parameter"]["Value"]
         dynamodb_client = boto3.resource("dynamodb", region_name=os.getenv("REGION_NAME", "us-east-1"))
-        table = dynamodb_client.Table("martychat_users-development")
+        table = dynamodb_client.Table(table_name)
     except Exception as e:
         logger.exception("Failed to initialize DynamoDB client.")
         raise RuntimeError(f"Failed to initialize DynamoDB client: {e}") from e
