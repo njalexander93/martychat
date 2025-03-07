@@ -8,6 +8,11 @@ venv/
 __pycache__/
 *.sqlite3
 
+# Ignore testing and linting caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
 # Ignore FastAPI dependencies and cache
 *.log
 *.db

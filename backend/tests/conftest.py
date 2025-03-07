@@ -13,8 +13,10 @@ __copyright__ = "Copyright (c) 2025 MartyChat"
 
 import datetime
 import json
+import logging
 import os
 import sys
+import time
 import uuid
 from collections.abc import Generator
 from unittest.mock import MagicMock, patch
@@ -28,6 +30,74 @@ sys.path.insert(0, backend_dir)
 # Add the lambda directory to the sys path
 lambda_dir = os.path.join(backend_dir, "lambda")
 sys.path.insert(0, lambda_dir)
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_configure() -> None:
+    """Configure the pytest logging.
+
+    This function configures the pytest logging to display the logging messages in the console.
+    """
+    log_dir = "backend/tests/logs"
+    os.makedirs(log_dir, exist_ok=True)  # Ensure log directory exists
+
+    file_timestamp = time.strftime("%Y%m%d%H%M%S")
+    log_file = os.path.join(log_dir, f"pytest-{file_timestamp}.log")
+
+    log_timestamp_format = "%Y-%m-%d %H:%M:%S"
+    logging.basicConfig(
+        filename=log_file,
+        level=logging.DEBUG,  # Set log level to capture all messages
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        datefmt=log_timestamp_format,
+    )
+
+    log_timestamp = time.strftime(log_timestamp_format)
+    logging.info("========== Pytest Session Started ==========")
+    logging.info("Test session started at: %s", log_timestamp)
+    logging.info(f"Logging to: {log_file}")
+
+
+@pytest.hookimpl(trylast=True)
+def pytest_unconfigure() -> None:
+    """Finish the pytest logging when the test session ends.
+
+    This function completes the pytest logging to display the logging messages in the console when the test session
+    ends.
+    """
+    log_timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+    logging.info("Test session ended at: %s", log_timestamp)
+    logging.info("========== Pytest Session Ended ==========")
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_runtest_logstart(nodeid: str, location: str) -> None:
+    """Format the log message at the start of the test.
+
+    This function formats the log message at the start of the test.
+
+    Args:
+        nodeid (str): The node ID of the test.
+        location (str): The location of the test.
+    """
+    logging.info("=" * 93)
+    logging.info(f"STARTING TEST: {nodeid}")
+    logging.info("=" * 93)
+
+
+@pytest.hookimpl(trylast=True)
+def pytest_runtest_logfinish(nodeid: str, location: str) -> None:
+    """Format the log message at the end of the test.
+
+    This function formats the log message at the end of the test.
+
+    Args:
+        nodeid (str): The node ID of the test.
+        location (str): The location of the test.
+    """
+    logging.info("=" * 93)
+    logging.info(f"FINISHED TEST: {nodeid}")
+    logging.info("=" * 93 + "\n")
 
 
 @pytest.fixture
@@ -97,12 +167,13 @@ def mock_env_vars() -> Generator[None, None, None]:
             "NEXT_PUBLIC_FRONTEND_URL": "http://localhost:3000",
             "NEXT_PUBLIC_API_URL": "http://localhost:8000",
             "NEXT_PUBLIC_LAMBDA_URL": "http://localhost:9000",
-            "API_SECRETS_PARAM": "/martychat/secrets/api_keys",
-            "PINECONE_ENV_PARAM": "/marty/pinecone/env",
-            "PINECONE_INDEX_PARAM": "/marty/pinecone/index",
-            "COGNITO_USER_PARAM": "/martychat/dev/cognito_user_pool_id",
-            "COGNITO_CLIENT_PARAM": "/martychat/dev/cognito_app_client_id",
-            "INFRA_SECRETS_PARAM": "/martychat/secrets/infrastructure_keys_dev",
+            "API_SECRETS_PARAM": "/path/to/api_secrets",
+            "PINECONE_ENV_PARAM": "/path/to/pinecone_env",
+            "PINECONE_INDEX_PARAM": "/path/to/pinecone_index",
+            "COGNITO_USER_PARAM": "/path/to/cognito_user_pool_id",
+            "COGNITO_CLIENT_PARAM": "/path/to/cognito_client_id",
+            "DYNAMODB_USER_TABLE_PARAM": "/path/to/dynamodb/user/table",
+            "INFRA_SECRETS_PARAM": "/path/to/infra_secrets",
         },
     ):
         yield
