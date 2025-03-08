@@ -19,6 +19,7 @@ import logging
 import os
 
 import boto3
+import botocore.exceptions
 
 # Set up logging
 logging.basicConfig(
@@ -158,9 +159,15 @@ def delete_user_from_cognito(username: str) -> bool:
         )
         logger.info(f"User {username} deleted from AWS Cognito.")
         return True
-    except cognito_client.exceptions.UserNotFoundException:
-        logger.warning(f"User {username} not found in AWS Cognito.")
-        return False
+    except botocore.exceptions.ClientError as e:
+        error_code = e.response["Error"]["Code"]
+
+        if error_code == "UserNotFoundException":
+            logger.warning("User not found in AWS Cognito.")
+            return False
+
+        logger.exception("Error deleting user from AWS Cognito.")
+        raise RuntimeError("Error deleting user from AWS Cognito.") from e
     except Exception as e:
         logger.exception(f"Error deleting user {username} from AWS Cognito.")
         raise RuntimeError(f"Error deleting user {username} from AWS Cognito.") from e
@@ -241,9 +248,15 @@ def get_user_id(username: str) -> str:
                 return attribute["Value"]
 
         raise RuntimeError(f"User ID not found for user {username}")
-    except cognito_client.exceptions.UserNotFoundException as e:
-        logger.exception(f"User {username} not found in AWS Cognito.")
-        raise RuntimeError(f"User {username} not found in AWS Cognito.") from e
+    except botocore.exceptions.ClientError as e:
+        error_code = e.response["Error"]["Code"]
+
+        if error_code == "UserNotFoundException":
+            logger.exception(f"User {username} not found in AWS Cognito.")
+            raise RuntimeError(f"User {username} not found in AWS Cognito.") from e
+
+        logger.exception("Error deleting user from AWS Cognito.")
+        raise RuntimeError("Error deleting user from AWS Cognito.") from e
     except Exception as e:
         logger.exception(f"Error getting user ID for {username}: {e}")
         raise RuntimeError(f"Error getting user ID for {username}: {e}") from e
