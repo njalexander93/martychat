@@ -178,12 +178,6 @@ def test_create_cognito_user_already_exists(mock_boto3_session: tuple, mock_env_
     # Mock the boto3 session
     mock_session.client.return_value = cognito_client
 
-    # Mock the cognito_client to raise a UsernameExistsException
-    # username_exists_exception = boto3.client("cognito-idp").exceptions.UsernameExistsException(
-    #     {"Error": {"Code": "UsernameExistsException", "Message": "User already exists."}}, "admin_create_user"
-    # )
-    # cognito_client.admin_create_user.side_effect = username_exists_exception
-
     # Create a correct exception type for UsernameExistsException
     username_exists_exception = botocore.exceptions.ClientError(
         error_response={"Error": {"Code": "UsernameExistsException", "Message": "User already exists."}},

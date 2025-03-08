@@ -176,8 +176,8 @@ def lambda_handler(event: dict, context: object) -> dict:
 
         # Retrieve the request body from the event data
         body = json.loads(event["body"])
-        email = body["email"]
-        password = body["password"]
+        email = body.get("email")
+        password = body.get("password")
 
         if not email or not password:
             logger.error("Email and password are required.")
@@ -206,27 +206,24 @@ def lambda_handler(event: dict, context: object) -> dict:
                 AuthFlow="USER_PASSWORD_AUTH",
                 AuthParameters={"USERNAME": email, "PASSWORD": password, "SECRET_HASH": secret_hash},
             )
-        except cognito_client.exceptions.NotAuthorizedException as e:
-            error_msg = str(e)
-            logger.error("NotAuthorizedException details: %s", error_msg)
-            logger.error("Client ID used: %s", client_id)
-
-            # Check if there are any specific error indicators
-            if "password" in error_msg.lower():
-                logger.error("Error appears to be password-related")
-            elif "user" in error_msg.lower():
-                logger.error("Error appears to be username-related")
-
-            logger.error("Incorrect username or password.")
-            return {
-                "statusCode": 401,
-                "headers": CORS_HEADERS,
-                "body": json.dumps({"error": "Incorrect username or password."}),
-            }
-        except cognito_client.exceptions.UserNotFoundException:
-            logger.error("User does not exist.")
-            return {"statusCode": 404, "headers": CORS_HEADERS, "body": json.dumps({"error": "User does not exist."})}
         except botocore.exceptions.ClientError as e:
+            error_code = e.response["Error"]["Code"]
+
+            if error_code == "UserNotFoundException":
+                logger.error("User does not exist.")
+                return {
+                    "statusCode": 404,  # AWS returns 401 for non-existent users!
+                    "headers": CORS_HEADERS,
+                    "body": json.dumps({"error": "User does not exist."}),
+                }
+            elif error_code == "NotAuthorizedException":
+                logger.error("Incorrect username or password.")
+                return {
+                    "statusCode": 401,
+                    "headers": CORS_HEADERS,
+                    "body": json.dumps({"error": "Incorrect username or password."}),
+                }
+
             logger.exception("Error authenticating user.")
             return {
                 "statusCode": 500,
