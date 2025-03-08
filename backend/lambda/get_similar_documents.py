@@ -309,11 +309,16 @@ def format_citation_date(date_str: str) -> str:
         if date_str.startswith("D:"):
             # Extract just the year portion (first 4 digits after 'D:')
             year = date_str[2:6]
+            if not year.isdigit():
+                raise ValueError(f"Invalid year format. Expected 4 digits, got: {year}")
             return year
 
-        # Add additional date format handling if needed
-        return date_str
-    except Exception:
+        if date_str.isdigit() and len(date_str) == 4:
+            return date_str
+
+        raise ValueError(f"Unrecognized date format: {date_str}. Expected D:YYYYMMDDHHmmSS or YYYY.")
+    except ValueError as e:
+        logger.warning("Failed to parse date string: %s. Setting year to 'n.d.'.", e)
         return "n.d."  # Return "no date" for any unparseable dates
 
 
