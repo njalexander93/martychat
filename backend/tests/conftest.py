@@ -173,6 +173,7 @@ def mock_env_vars() -> Generator[None, None, None]:
             "COGNITO_USER_PARAM": "/path/to/cognito_user_pool_id",
             "COGNITO_CLIENT_PARAM": "/path/to/cognito_client_id",
             "DYNAMODB_USER_TABLE_PARAM": "/path/to/dynamodb/user/table",
+            "S3_PROMPTS_BUCKET": "s3-prompt-bucket",
             "INFRA_SECRETS_PARAM": "/path/to/infra_secrets",
         },
     ):

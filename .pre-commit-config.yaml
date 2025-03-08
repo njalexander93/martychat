@@ -59,7 +59,7 @@ repos:
         name: pytest-check
         entry: pytest
         language: python
-        additional_dependencies: [pytest, pytest-cov, pytest-mock, boto3, botocore]
+        additional_dependencies: [pytest, pytest-cov, pytest-mock, boto3, botocore, httpx, openai]
         pass_filenames: false
         always_run: true
         args: [backend/tests/]
