@@ -390,7 +390,6 @@ def test_lambda_handler_success(aws_event: dict, lambda_context: MagicMock, mock
     Args:
         aws_event (dict): The AWS event.
         lambda_context (MagicMock): The Lambda context.
-        mock_boto3_session (tuple): The mocked boto3 session and client.
         mock_env_vars (None): The mocked environment variables.
     """
     # Set up the mock

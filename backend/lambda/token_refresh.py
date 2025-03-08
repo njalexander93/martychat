@@ -187,15 +187,18 @@ def lambda_handler(event: dict, context: object) -> dict:
                 AuthFlow="REFRESH_TOKEN_AUTH",
                 AuthParameters={"REFRESH_TOKEN": refresh_token, "SECRET_HASH": secret_hash},
             )
-        except cognito_client.exceptions.NotAuthorizedException as e:
-            logger.exception("NotAuthorizedException has appeared: %s", e)
-            return {
-                "statusCode": 401,
-                "headers": CORS_HEADERS,
-                # "body": json.dumps({"error": f"Refresh token is invalid or expired. TOKEN {refresh_token}"})
-                "body": json.dumps({"error": f"NotAuthorizedException has appeared: {e!s}"}),
-            }
         except botocore.exceptions.ClientError as e:
+            error_code = e.response["Error"]["Code"]
+
+            if error_code == "NotAuthorizedException":
+                logger.exception("NotAuthorizedException has appeared: %s", e)
+                return {
+                    "statusCode": 401,
+                    "headers": CORS_HEADERS,
+                    # "body": json.dumps({"error": f"Refresh token is invalid or expired. TOKEN {refresh_token}"})
+                    "body": json.dumps({"error": f"NotAuthorizedException has appeared: {e!s}"}),
+                }
+
             logger.exception("Error refreshing tokens.")
             return {
                 "statusCode": 500,
