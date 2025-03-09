@@ -62,7 +62,10 @@ repos:
         additional_dependencies: [
             boto3,
             botocore,
+            dotenv,
+            fastapi,
             httpx,
+            jwt,
             nltk,
             openai,
             pinecone,
