@@ -26,6 +26,7 @@ from dotenv import load_dotenv
 from fastapi import APIRouter, HTTPException, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
+
 from utils.logger import logger
 
 ENV = os.getenv("ENV", "development")

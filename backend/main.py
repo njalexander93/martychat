@@ -15,6 +15,7 @@ import os
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from marty.marty import router as marty_router
 from utils.logger import logger
 

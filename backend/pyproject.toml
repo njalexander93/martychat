@@ -3,7 +3,7 @@ name = "martychat"
 version = "0.1.0"
 description = "MartyChat application"
 authors = ["Nikolai <njalexander93@gmail.com>"]
-readme = "README.md"
+readme = "../README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
@@ -67,7 +67,7 @@ convention = "google"
 max-complexity = 10
 
 [tool.ruff.isort]
-known-first-party = ["backend"]
+known-first-party = ["martychat"]
 known-third-party = ["boto3", "fastapi", "uvicorn", "pytest"]
 # Google style guide preferences for imports
 section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
@@ -86,7 +86,7 @@ skip-magic-trailing-comma = false
 docstring-code-format = true
 
 [tool.pytest.ini_options]
-testpaths = ["backend/tests"]
+testpaths = ["tests"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
