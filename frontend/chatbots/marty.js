@@ -10,10 +10,9 @@
  * @copyright Copyright (c) 2025 MartyChat
  */
 
-
 export const martyConfig = {
-  title: "Marty - Your Psychology Research Assistant",
-  endpoint: "/api/v1/marty",
-  placeholder: "Ask Marty about psychology...",
-  welcomeMessage: "Hello! I'm Marty, your psychology research assistant. How can I help you today?"
+  title: 'Marty - Your Psychology Research Assistant',
+  endpoint: '/api/v1/marty',
+  placeholder: 'Ask Marty about psychology...',
+  welcomeMessage: "Hello! I'm Marty, your psychology research assistant. How can I help you today?",
 };

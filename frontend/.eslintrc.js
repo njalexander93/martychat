@@ -6,23 +6,19 @@ module.exports = {
     'plugin:react/recommended',
     'plugin:react-hooks/recommended',
     'plugin:jest/recommended',
-    'prettier'
+    'prettier',
   ],
-  plugins: [
-    'react',
-    'react-hooks',
-    'jest'
-  ],
+  plugins: ['react', 'react-hooks', 'jest'],
   env: {
     browser: true,
     es2021: true,
     node: true,
-    'jest/globals': true
+    'jest/globals': true,
   },
   settings: {
     react: {
-      version: 'detect'
-    }
+      version: 'detect',
+    },
   },
   rules: {
     'react/react-in-jsx-scope': 'off',
@@ -34,15 +30,18 @@ module.exports = {
     'jest/no-focused-tests': 'error',
     'jest/no-identical-title': 'error',
     'jest/valid-expect': 'error',
-    'max-len': ['error', {
-      'code': 120,
-      'tabWidth': 2,
-      'ignoreUrls': true,
-      'ignorePattern': '^import\\s.+\\sfrom\\s.+;$',
-      'ignoreComments': true,
-      'ignoreStrings': true,
-      'ignoreTemplateLiterals': true,
-      'ignoreRegExpLiterals': true
-    }]
-  }
+    'max-len': [
+      'error',
+      {
+        code: 120,
+        tabWidth: 2,
+        ignoreUrls: true,
+        ignorePattern: '^import\\s.+\\sfrom\\s.+;$',
+        ignoreComments: true,
+        ignoreStrings: true,
+        ignoreTemplateLiterals: true,
+        ignoreRegExpLiterals: true,
+      },
+    ],
+  },
 };

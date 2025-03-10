@@ -52,7 +52,5 @@ export const config = {
   // - api routes (/api/*)
   // - static files (_next/static/*)
   // - public files (favicon.ico, etc.)
-  matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|icon.ico|assets).*)',
-  ],
-}
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|icon.ico|assets).*)'],
+};

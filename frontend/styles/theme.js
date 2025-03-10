@@ -16,36 +16,36 @@ export const themeConfig = {
     primary: {
       DEFAULT: '#630917',
       hover: '#771424',
-      active: '#510D18'
+      active: '#510D18',
     },
     secondary: {
       DEFAULT: '#4D4D4C',
       hover: '#5F5F5E',
-      active: '#3D3D3C'
+      active: '#3D3D3C',
     },
     accent: {
       DEFAULT: '#8B4D4D',
       hover: '#A25959',
-      active: '#743F3F'
+      active: '#743F3F',
     },
     text: {
       primary: '#2D2D2D',
       secondary: '#424241',
       input: '#717171',
-      light: '#F8F6F6'
+      light: '#F8F6F6',
     },
     background: {
       input: '#F3F4F6',
       primary: '#E5E7EB',
       secondary: '#D1D5DB',
-      dark: '#374151'
-    }
+      dark: '#374151',
+    },
   },
   fonts: {
     roboto: 'Roboto',
     robotoSlab: 'Roboto Slab',
-    robotoFlex: 'Roboto Flex'
-  }
+    robotoFlex: 'Roboto Flex',
+  },
 };
 
 // Generate CSS Variables
@@ -90,28 +90,28 @@ export const tailwindColors = {
   primary: {
     DEFAULT: 'var(--color-primary)',
     hover: 'var(--color-primary-hover)',
-    active: 'var(--color-primary-active)'
+    active: 'var(--color-primary-active)',
   },
   secondary: {
     DEFAULT: 'var(--color-secondary)',
     hover: 'var(--color-secondary-hover)',
-    active: 'var(--color-secondary-active)'
+    active: 'var(--color-secondary-active)',
   },
   accent: {
     DEFAULT: 'var(--color-accent)',
     hover: 'var(--color-accent-hover)',
-    active: 'var(--color-accent-active)'
+    active: 'var(--color-accent-active)',
   },
   text: {
     primary: 'var(--color-text-primary)',
     secondary: 'var(--color-text-secondary)',
     input: 'var(--color-text-input)',
-    light: 'var(--color-text-light)'
+    light: 'var(--color-text-light)',
   },
   bg: {
     primary: 'var(--color-bg-primary)',
     secondary: 'var(--color-bg-secondary)',
     dark: 'var(--color-bg-dark)',
-    input: 'var(--color-bg-input)'
-  }
+    input: 'var(--color-bg-input)',
+  },
 };

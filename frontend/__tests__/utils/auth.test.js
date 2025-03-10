@@ -1,38 +1,32 @@
-import {
-  isTokenExpired,
-  refreshTokens,
-  isAuthenticated,
-  handleLogout,
-  checkAndRefreshAuth
-} from '@/utils/auth';
+import { isTokenExpired, refreshTokens, isAuthenticated, handleLogout, checkAndRefreshAuth } from '@/utils/auth';
 
 // Mock localStorage and sessionStorage
-const localStorageMock = (function() {
+const localStorageMock = (function () {
   let store = {};
   return {
-    getItem: jest.fn(key => store[key] || null),
+    getItem: jest.fn((key) => store[key] || null),
     setItem: jest.fn((key, value) => {
       store[key] = value.toString();
     }),
-    removeItem: jest.fn(key => {
+    removeItem: jest.fn((key) => {
       delete store[key];
     }),
     clear: jest.fn(() => {
       store = {};
-    })
+    }),
   };
 })();
 
-const sessionStorageMock = (function() {
+const sessionStorageMock = (function () {
   let store = {};
   return {
-    getItem: jest.fn(key => store[key] || null),
+    getItem: jest.fn((key) => store[key] || null),
     setItem: jest.fn((key, value) => {
       store[key] = value.toString();
     }),
-    removeItem: jest.fn(key => {
+    removeItem: jest.fn((key) => {
       delete store[key];
-    })
+    }),
   };
 })();
 

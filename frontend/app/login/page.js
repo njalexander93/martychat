@@ -10,13 +10,13 @@
  * @copyright Copyright (c) 2025 MartyChat
  */
 
-"use client";  // Required for using useEffect in the Next.js App Router
+'use client'; // Required for using useEffect in the Next.js App Router
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import AuthenticationForm from "@/components/AuthenticationForm";
-import sanitizeHtml from "sanitize-html";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import AuthenticationForm from '@/components/AuthenticationForm';
+import sanitizeHtml from 'sanitize-html';
 
 /**
  * Login page component.
@@ -24,9 +24,9 @@ import sanitizeHtml from "sanitize-html";
  * @returns {React.Element} The rendered login page component.
  */
 export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loginError, setLoginError] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   // Use the Next.js router to redirect the user to the chat page after login
@@ -39,7 +39,7 @@ export default function Login() {
    */
   const handleLogin = async (e) => {
     e.preventDefault();
-    setLoginError("");
+    setLoginError('');
     setIsLoading(true); // Set loading state to true. This will be used to show a loading spinner
 
     // Sanitize the email input to prevent XSS attacks
@@ -51,20 +51,19 @@ export default function Login() {
       password: password,
     };
 
-
     // Validate that the user put in an email and password, and didn't just leave them blank
     if (!email || !password) {
       setIsLoading(false);
-      setLoginError("Email and password are required.");
+      setLoginError('Email and password are required.');
       return;
     }
 
     try {
       // Create a new user in Cognito and DynamoDB with the create-user Lambda function.
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(loginData),
       });
@@ -78,47 +77,45 @@ export default function Login() {
       // Store the authentication tokens in local storage
       if (data.authenticationResult) {
         // Store the tokens in local storage
-        localStorage.setItem("idToken", data.authenticationResult.IdToken); // ID token for authentication
-        localStorage.setItem("accessToken", data.authenticationResult.AccessToken); // Access token for API requests
-        localStorage.setItem("refreshToken", data.authenticationResult.RefreshToken); // Refresh token for refreshing the ID token
+        localStorage.setItem('idToken', data.authenticationResult.IdToken); // ID token for authentication
+        localStorage.setItem('accessToken', data.authenticationResult.AccessToken); // Access token for API requests
+        localStorage.setItem('refreshToken', data.authenticationResult.RefreshToken); // Refresh token for refreshing the ID token
 
         // Store the user ID in the session storage to be used for authentication of API requests.
-        window.sessionStorage.setItem("userId", data.authenticationResult.UserId);
+        window.sessionStorage.setItem('userId', data.authenticationResult.UserId);
 
         // Calculate the token expiration times
         const now = new Date().getTime();
-        const idTokenExpires = now + (data.authenticationResult.IdTokenExpires * 1000);
-        const accessTokenExpires = now + (data.authenticationResult.AccessTokenExpires * 1000);
-        const refreshTokenExpires = now + (data.authenticationResult.RefreshTokenExpires * 1000);
+        const idTokenExpires = now + data.authenticationResult.IdTokenExpires * 1000;
+        const accessTokenExpires = now + data.authenticationResult.AccessTokenExpires * 1000;
+        const refreshTokenExpires = now + data.authenticationResult.RefreshTokenExpires * 1000;
 
         // Store the token expiration times in local storage
-        localStorage.setItem("idTokenExpires", idTokenExpires);
-        localStorage.setItem("accessTokenExpires", accessTokenExpires);
-        localStorage.setItem("refreshTokenExpires", refreshTokenExpires);
+        localStorage.setItem('idTokenExpires', idTokenExpires);
+        localStorage.setItem('accessTokenExpires', accessTokenExpires);
+        localStorage.setItem('refreshTokenExpires', refreshTokenExpires);
 
         // Set the ID token in a cookie for middleware authentication.
         document.cookie = `idToken=${data.authenticationResult.IdToken}; path=/`;
 
         // Get the callback URL if it exists
         const urlParams = new URLSearchParams(window.location.search);
-        const callbackUrl = urlParams.get("callbackUrl") || "/marty";
+        const callbackUrl = urlParams.get('callbackUrl') || '/marty';
 
-        console.log("Login successful! Redirecting to:", callbackUrl);
+        console.log('Login successful! Redirecting to:', callbackUrl);
 
         // Clear the form fields
         setIsLoading(false);
-        setLoginError("");
+        setLoginError('');
 
         // Redirect to the chat page
         await router.push(callbackUrl); // Redirect to the chat page
       }
-    }
-    catch (e) {
-      console.error("Error logging in:", e);
+    } catch (e) {
+      console.error('Error logging in:', e);
       setIsLoading(false);
-      setLoginError("Sign in failed. Please try again later.");
-    }
-    finally {
+      setLoginError('Sign in failed. Please try again later.');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -158,7 +155,8 @@ export default function Login() {
           />
         </div>
         <div className="mb-4 text-center">
-          {loginError && <p className="mb-2 text-sm text-red-600">{loginError}</p>} {/* Display the signup error message */}
+          {loginError && <p className="mb-2 text-sm text-red-600">{loginError}</p>}{' '}
+          {/* Display the signup error message */}
         </div>
         <button
           type="submit"

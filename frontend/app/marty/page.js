@@ -10,11 +10,11 @@
  * @copyright Copyright (c) 2025 MartyChat
  */
 
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import ChatInterface from "@/components/ChatInterface";
-import { martyConfig } from "@/chatbots/marty";
+import { useEffect, useState } from 'react';
+import ChatInterface from '@/components/ChatInterface';
+import { martyConfig } from '@/chatbots/marty';
 
 /**
  * The Marty chat interface component.
@@ -22,5 +22,5 @@ import { martyConfig } from "@/chatbots/marty";
  * @returns {React.Element} The rendered signup page component.
  */
 export default function MartyPage() {
-  return <ChatInterface {...martyConfig} />
+  return <ChatInterface {...martyConfig} />;
 }

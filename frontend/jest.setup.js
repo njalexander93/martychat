@@ -26,9 +26,11 @@ jest.mock('next/navigation', () => ({
 
 // Mock the Next.js link component
 jest.mock('next/link', () => {
-  return ({ children, ...props }) => {
+  const MockLink = ({ children, ...props }) => {
     return <a {...props}>{children}</a>;
   };
+  MockLink.displayName = 'MockNextLink';
+  return MockLink;
 });
 
 // Global mocks for environment variables
