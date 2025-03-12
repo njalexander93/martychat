@@ -20,7 +20,6 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Access-Control-Max-Age': '86400',
-  'Content-Type': 'application/json',
 };
 
 /** Rate limiting middleware for the refresh API endpoint.
@@ -29,6 +28,11 @@ const CORS_HEADERS = {
  * @returns {Boolean} True if the IP address is rate limited, false otherwise.
  */
 function isRateLimited(ip) {
+  // Disable rate limiting in development and testing environments
+  if (process.env.NODE_ENV !== 'production') {
+    return false;
+  }
+
   const now = Date.now();
   const count = requestCounts.get(ip) || [];
 
@@ -44,6 +48,18 @@ function isRateLimited(ip) {
   recentRequests.push(now);
   requestCounts.set(ip, recentRequests);
   return false;
+}
+
+/**
+ * OPTIONS handler for the login API endpoint.
+ *
+ * @returns {NextResponse} The response object.
+ */
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: CORS_HEADERS,
+  });
 }
 
 /**
@@ -116,16 +132,4 @@ export async function POST(request) {
     console.error('Refresh Error:', e);
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500, headers: CORS_HEADERS });
   }
-}
-
-/**
- * OPTIONS handler for the login API endpoint.
- *
- * @returns {NextResponse} The response object.
- */
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 204,
-    headers: CORS_HEADERS,
-  });
 }
