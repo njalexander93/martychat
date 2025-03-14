@@ -59,6 +59,7 @@ ignore = [
     "D107",  # Missing docstring in __init__ (Google style allows this)
     "ANN101", # Missing type annotation for `self` (not required by Google)
     "ANN102", # Missing type annotation for `cls` (not required by Google)
+    "SIM300", # Simplify boolean expressions (can be subjective)
 ]
 
 [tool.ruff.pydocstyle]
