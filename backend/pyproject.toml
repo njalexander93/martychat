@@ -45,6 +45,11 @@ select = [
     "TCH", # type-checking
     "RUF", # Ruff-specific rules
 ]
+
+# Enable auto-fixing of errors where possible
+fix = true
+
+[tool.ruff.lint]
 # Ignore rules that conflict with Google style or other tools
 ignore = [
     "E203",  # Whitespace before ':'
@@ -52,9 +57,9 @@ ignore = [
     "D203",  # one-blank-line-before-class (conflicts with D211)
     "D212",  # multi-line-summary-first-line (conflicts with Google style)
     "D107",  # Missing docstring in __init__ (Google style allows this)
+    "ANN101", # Missing type annotation for `self` (not required by Google)
+    "ANN102", # Missing type annotation for `cls` (not required by Google)
 ]
-# Enable auto-fixing of errors where possible
-fix = true
 
 [tool.ruff.pydocstyle]
 # Use Google-style docstrings
