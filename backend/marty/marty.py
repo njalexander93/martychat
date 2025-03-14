@@ -351,7 +351,7 @@ def generate_response(request: ChatRequest) -> dict:
 
     # Add the conversation history to the message to enhance the question before submitting it to the model.
     if conversation_history:
-        formatted_history = "\n".join([f"{msg["role"]}: {msg["content"]}" for msg in conversation_history])
+        formatted_history = "\n".join([f"{msg['role']}: {msg['content']}" for msg in conversation_history])
         enhanced_message = f"Context from the previous conversation:\n{formatted_history}"
         enhanced_message += f"\nCurrent Question: {message}"
     else:

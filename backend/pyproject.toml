@@ -60,6 +60,7 @@ ignore = [
     "ANN101", # Missing type annotation for `self` (not required by Google)
     "ANN102", # Missing type annotation for `cls` (not required by Google)
     "SIM300", # Simplify boolean expressions (can be subjective)
+    "TCH004", # Unused type ignore comment (not always applicable)
 ]
 
 [tool.ruff.pydocstyle]

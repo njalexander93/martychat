@@ -65,7 +65,7 @@ jobs:
       - name: Type check with mypy
         run: |
           pip install mypy types-requests types-PyYAML
-          mypy --ignore-missing-imports backend/
+          mypy --config-file backend/mypy.ini --ignore-missing-imports backend/
 
       - name: Test with pytest
         run: |
