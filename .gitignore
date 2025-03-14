@@ -1,13 +1,17 @@
 # Ignore Python virtual environments
-venv/
-.env
+venv*/
+.venv*/
 .env.local
-.env*
 *.pyc
 *.pyo
 *.pyd
 __pycache__/
 *.sqlite3
+
+# Ignore testing and linting caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
 
 # Ignore FastAPI dependencies and cache
 *.log
@@ -26,9 +30,9 @@ instance/
 .DS_Store
 
 # Ignore Next.js build and dependency files
-frontend/.next/
-frontend/node_modules/
-frontend/.eslintcache
+.next/
+node_modules/
+.eslintcache
 
 # Ignore frontend dependencies
 .pnp
@@ -49,8 +53,6 @@ out/
 build/
 
 # Ignore production artifacts
-frontend/.env.local
-frontend/.env*
 .vercel
 
 # Ignore debug logs
@@ -70,3 +72,19 @@ docker/
 
 # Ignore misc files
 *.pem
+
+# SAM Config
+.aws-sam/
+env.json
+
+# Local AWS and Config Files
+.aws/
+config/
+credentials/
+
+# Terraform and CloudFormation state files
+terraform.tfstate
+terraform.tfstate.backup
+
+# Miscellaneous
+tree.txt

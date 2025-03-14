@@ -1,17 +1,45 @@
+/**
+ * @fileoverview Tailwind configuration for the MartyChat application.
+ * This file defines the Tailwind CSS configuration.
+ *
+ * @author Nikolai Alexander
+ * @email njalexander93@gmail.com
+ * @version 1.0.0
+ * @date 2025-02-28
+ * @license Proprietary
+ * @copyright Copyright (c) 2025 MartyChat
+ */
+
+import { tailwindColors } from './styles/theme.js';
+
 /** @type {import('tailwindcss').Config} */
-export default {
+const tailwindConfig = {
   content: [
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    './pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        ...tailwindColors,
+      },
+      backgroundColor: {
+        ...Object.entries(tailwindColors.bg).reduce((acc, [key, value]) => {
+          acc[`bg-${key}`] = value;
+          return acc;
+        }, {}),
+      },
+      fontFamily: {
+        roboto: ['var(--font-roboto)'],
+        'roboto-slab': ['var(--font-roboto-slab)'],
+        'roboto-flex': ['var(--font-roboto-flex)'],
       },
     },
   },
-  plugins: [],
+  plugins: [
+    require('tailwind-scrollbar')({ nocompatible: true }), // Added scrollbar plugin with nocompatible mode
+  ],
 };
+
+export default tailwindConfig;

@@ -1,0 +1,228 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: MartyChat Lambda Functions for Local Development
+
+Parameters:
+  REGION_NAME:
+    Type: String
+    Default: "us-east-1"
+    Description: "AWS Region for deployment"
+  API_SECRETS_PARAM:
+    Type: String
+    Description: "Parameter Store path for API secrets"
+  PINECONE_ENV_PARAM:
+    Type: String
+    Description: "Parameter Store path for Pinecone environment"
+  PINECONE_INDEX_PARAM:
+    Type: String
+    Description: "Parameter Store path for Pinecone index"
+  COGNITO_USER_PARAM:
+    Type: String
+    Description: "Parameter Store path for Cognito user pool ID"
+  COGNITO_CLIENT_PARAM:
+    Type: String
+    Description: "Parameter Store path for Cognito client ID"
+  INFRA_SECRETS_PARAM:
+    Type: String
+    Description: "Parameter Store path for infrastructure secrets"
+  DYNAMODB_USER_TABLE_PARAM:
+    Type: String
+    Description: "Parameter Store path for DynamoDB user table"
+  S3_PROMPTS_BUCKET:
+    Type: String
+    Description: "S3 bucket for prompts"
+
+Globals:
+  Function:
+    Timeout: 10
+    MemorySize: 256
+    Runtime: python3.12
+    Environment:
+      Variables:
+        ENV: development
+        NEXT_PUBLIC_FRONTEND_URL: "http://localhost:3000"
+        NEXT_PUBLIC_API_URL: "http://localhost:8000"
+        NEXT_PUBLIC_LAMBDA_URL: "http://localhost:9000"
+        REGION_NAME: !Ref REGION_NAME
+        API_SECRETS_PARAM: !Ref API_SECRETS_PARAM
+        PINECONE_ENV_PARAM: !Ref PINECONE_ENV_PARAM
+        PINECONE_INDEX_PARAM: !Ref PINECONE_INDEX_PARAM
+        COGNITO_USER_PARAM: !Ref COGNITO_USER_PARAM
+        COGNITO_CLIENT_PARAM: !Ref COGNITO_CLIENT_PARAM
+        INFRA_SECRETS_PARAM: !Ref INFRA_SECRETS_PARAM
+        DYNAMODB_USER_TABLE_PARAM: !Ref DYNAMODB_USER_TABLE_PARAM
+        S3_PROMPTS_BUCKET: !Ref S3_PROMPTS_BUCKET
+  Api:
+    Auth:
+      DefaultAuthorizer: NONE
+    Cors:
+      AllowMethods: "'OPTIONS,POST'"
+      AllowHeaders: "'Content-Type,Authorization,X-Requested-With'"
+      AllowOrigin: "'*'"
+      AllowCredentials: "'true'"
+
+Resources:
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: "MartyChatAPI"
+      StageName: "dev"
+      Auth:
+        DefaultAuthorizer: NONE
+      Cors:
+        AllowMethods: "'OPTIONS,POST'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: "'*'"
+      GatewayResponses:
+        DEFAULT_4XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'*'"
+              Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              Access-Control-Allow-Methods: "'OPTIONS,POST'"
+        DEFAULT_5XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'*'"
+              Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              Access-Control-Allow-Methods: "'OPTIONS,POST'"
+
+  CreateUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: create_user.lambda_handler
+      CodeUri: ../lambda/
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Events:
+        CreateUserApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: "/api/auth/signup"
+            Method: POST
+            Auth:
+              Authorizer: NONE
+
+  DeleteUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: delete_user.lambda_handler
+      CodeUri: ../lambda/
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Events:
+        DeleteUserEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: "/api/auth/delete-user"
+            Method: POST
+            Auth:
+              Authorizer: NONE
+
+  SignInFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: sign_in.lambda_handler
+      CodeUri: ../lambda/
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Events:
+        SignInApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: "/api/auth/login"
+            Method: POST
+            Auth:
+              Authorizer: NONE
+
+  TokenRefreshFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: token_refresh.lambda_handler
+      CodeUri: ../lambda/
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:InitiateAuth
+                - cognito-idp:DescribeUserPool
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+              Resource:
+                - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${COGNITO_USER_PARAM}'
+                - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${COGNITO_CLIENT_PARAM}'
+                - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${INFRA_SECRETS_PARAM}'
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: '*'
+      Events:
+        TokenRefreshApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: "/api/auth/refresh"
+            Method: POST
+            Auth:
+              Authorizer: NONE
+
+  AnalyzeQueryComplexity:
+      Type: AWS::Serverless::Function
+      Properties:
+        Handler: analyze_query_complexity.lambda_handler
+        CodeUri: ../lambda/
+        Policies:
+          - AWSLambdaBasicExecutionRole
+        Events:
+          AnalyzeQueryComplexityApiEvent:
+            Type: Api
+            Properties:
+              RestApiId: !Ref ApiGateway
+              Path: "/api/v1/analyze-query-complexity"
+              Method: POST
+              Auth:
+                Authorizer: NONE
+
+  GetSimilarDocuments:
+      Type: AWS::Serverless::Function
+      Properties:
+        Handler: get_similar_documents.lambda_handler
+        CodeUri: ../lambda/
+        Timeout: 30
+        Policies:
+          - AWSLambdaBasicExecutionRole
+        Events:
+          GetSimilarDocumentsApiEvent:
+            Type: Api
+            Properties:
+              RestApiId: !Ref ApiGateway
+              Path: "/api/v1/get-similar-documents"
+              Method: POST
+              Auth:
+                Authorizer: NONE
+
+  GenerateResponseWithCitations:
+      Type: AWS::Serverless::Function
+      Properties:
+        Handler: generate_response_with_citations.lambda_handler
+        CodeUri: ../lambda/
+        Timeout: 60
+        Policies:
+          - AWSLambdaBasicExecutionRole
+        Events:
+          GenerateResponseWithCitationsApiEvent:
+            Type: Api
+            Properties:
+              RestApiId: !Ref ApiGateway
+              Path: "/api/v1/generate-response-with-citations"
+              Method: POST
+              Auth:
+                Authorizer: NONE

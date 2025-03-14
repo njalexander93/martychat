@@ -4,8 +4,8 @@
  *
  * @author Nikolai Alexander
  * @email njalexander93@gmail.com
- * @version 1.0.0
- * @date TBD
+ * @version 1.0.1
+ * @date 2025-02-28
  * @license Proprietary
  * @copyright Copyright (c) 2025 MartyChat
  */
@@ -15,83 +15,52 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Define CSS variables for light mode */
-:root {
-  --background: #ffffff; /* Default background color */
-  --foreground: #171717; /* Default text color */
-}
-
-/* Define CSS variables for dark mode */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a; /* Dark background color */
-    --foreground: #ededed; /* Light text color */
-  }
-}
-
 /* Main body element style */
 body {
-  color: var(--foreground); /* Default text color */
-  background: var(--background); /* Default background color */
-  font-family: Arial, Helvetica, sans-serif; /* Default font family */
+  @apply text-text-primary bg-bg-primary font-roboto;
 }
 
 /* Make the target object unselectable */
 .unselectable {
-  user-select: none; /* Disable text selection */
+  @apply select-none;
 }
 
 /* Global styles for links */
 a {
-  color: #630917; /* Default text color */
-  text-decoration: none; /* Remove underline */
+  @apply text-primary no-underline
+         hover:text-primary-hover
+         active:text-primary-active;
 }
 
-a:hover {
-  color: #ab1028; /* Text color on hover */
-}
-
-a:active {
-  color: #3f060f; /* Text color on active */
-}
-
-/* Styles for the basic text inside the authentication form */
+/* Styles for the authentication form */
 .auth-form-text {
-  background-color: #dfdfdf; /* Background color for the authentication form text */
+  @apply bg-bg-primary;
 }
 
 .auth-form-text h1 {
-  font-family: var(--font-roboto-slab); /* Font family for h1 elements */
+  @apply font-roboto-slab text-text-secondary;
 }
 
 .auth-form-text input,
 .auth-form-text label,
 .auth-form-text p {
-  font-family: var(--font-roboto-flex); /* Font family for input, label, and p elements */
+  @apply font-roboto-flex;
 }
 
 .auth-form-text h1,
 .auth-form-text label {
-  color: #4c4c4c; /* Text color for h1 and label elements */
+  @apply text-text-secondary;
 }
 
 .auth-form-text input {
-  color: #717171; /* Text color for input elements */
+  @apply text-text-input bg-bg-input;
 }
 
 /* Global styles for the submit button */
 .submit-button {
-  font-family: var(--font-roboto-slab); /* Font family for the submit button */
-  background-color: #630917; /* Background color for the submit button */
-  color: #dfdfdf; /* Text color for the submit button */
-}
-
-.submit-button:hover {
-  background-color: #771424; /* Background color for the submit button on hover */
-  color: #f3f3f3; /* Text color for the submit button on hover */
-}
-
-.submit-button:active {
-  background-color: #510d18; /* Background color for the submit button on active */
-  color: #d1d1d1; /* Text color for the submit button on active */
+  @apply font-roboto-slab
+         bg-primary text-text-light
+         hover:bg-primary-hover hover:text-text-light
+         active:bg-primary-active active:text-text-light
+         transition-colors duration-200;
 }
