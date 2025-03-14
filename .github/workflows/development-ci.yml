@@ -90,7 +90,7 @@ jobs:
 
       - name: Lint with ESLint
         working-directory: frontend
-        run: npx eslint . --config eslint.config.js
+        run: npx eslint . --config eslint.config.mjs
 
       - name: Format check with Prettier
         working-directory: frontend
