@@ -78,13 +78,16 @@ def test_decode_token_valid_token(mock_env_vars: None) -> None:
     # Mock the jwt.algorithms.RSAAlgorithm.from_jwk function
     mock_rsa_key = MagicMock(spec=RSAPublicKey)
 
-    # Mock the jwt.decode function
+    # Create a dedicated mock for jwt.decode
+    mock_decode = MagicMock()
     mock_decoded_token = {"sub": "test-user-id", "client_id": test_client_id}
+    mock_decode.return_value = mock_decoded_token
 
-    mock_from_jwk = patch("marty.marty.jwt.algorithms.RSAAlgorithm.from_jwk", return_value=mock_rsa_key)
-    mock_jwt_decode = patch("marty.marty.jwt.decode", return_value=mock_decoded_token)
-
-    with mock_from_jwk, mock_jwt_decode:
+    # Mock the functions
+    with (
+        patch("marty.marty.jwt.algorithms.RSAAlgorithm.from_jwk", return_value=mock_rsa_key),
+        patch("marty.marty.jwt.decode", mock_decode),
+    ):
         # Call the function
         result = marty.decode_token(test_token, test_header, test_client_id, test_user_pool_id, test_region)
 
@@ -92,9 +95,7 @@ def test_decode_token_valid_token(mock_env_vars: None) -> None:
         assert result == mock_decoded_token
 
         # Verify jwt.decode was called with the correct parameters
-        marty.jwt.decode.assert_called_once_with(
-            test_token, key=mock_rsa_key, algorithms=["RS256"], audience=test_client_id
-        )
+        mock_decode.assert_called_once_with(test_token, key=mock_rsa_key, algorithms=["RS256"], audience=test_client_id)
 
 
 @pytest.mark.unit

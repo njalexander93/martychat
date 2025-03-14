@@ -7,7 +7,7 @@ an authentication result that includes a id token, access token, and refresh tok
 __author__ = "Nikolai Alexander"
 __email__ = "njalexander93@gmail.com"
 __version__ = "1.0.0"
-__date__ = "2025-02-28"
+__date__ = "TBD"
 __license__ = "Proprietary"
 __copyright__ = "Copyright (c) 2025 MartyChat"
 
@@ -17,9 +17,28 @@ import hmac
 import json
 import logging
 import os
+from typing import Any, Protocol, cast
 
 import boto3
 import botocore.exceptions
+
+
+# Define a Protocol for the Cognito client with the methods we use
+class CognitoClient(Protocol):
+    """Protocol for the Cognito client with the methods we use."""
+
+    def get_user(self, *, AccessToken: str) -> dict[str, Any]:  # noqa: N803
+        """Retrieve user information from AWS Cognito."""
+        ...
+
+    def initiate_auth(self, *, ClientId: str, AuthFlow: str, AuthParameters: dict[str, str]) -> dict[str, Any]:  # noqa: N803
+        """Initiate the authentication process with AWS Cognito."""
+        ...
+
+    def describe_user_pool(self, *, UserPoolId: str) -> dict[str, Any]:  # noqa: N803
+        """Describe the user pool in AWS Cognito."""
+        ...
+
 
 # Set up logging
 logging.basicConfig(
@@ -128,11 +147,11 @@ def get_secret_hash(username: str, client_id: str, client_secret: str) -> str:
     return base64.b64encode(dig).decode()
 
 
-def get_user_id(cognito_client: boto3.client, access_token: str) -> str:
+def get_user_id(cognito_client: CognitoClient, access_token: str) -> str:
     """Get the userID from the AWS Cognito user pool using the access token.
 
     Args:
-        cognito_client (boto3.client): The AWS Cognito client.
+        cognito_client (CognitoClient): The AWS Cognito client.
         access_token (str): The access token for the user.
 
     Returns:
@@ -234,7 +253,9 @@ def lambda_handler(event: dict, context: object) -> dict:
         # Get the user ID from the access token.
         try:
             access_token = response["AuthenticationResult"]["AccessToken"]
-            user_id = get_user_id(cognito_client, access_token)
+            # Cast the client to our Protocol type to satisfy mypy
+            typed_client = cast(CognitoClient, cognito_client)
+            user_id = get_user_id(typed_client, access_token)
         except Exception as e:
             logger.exception("Error getting user ID from AWS Cognito.")
             return {
