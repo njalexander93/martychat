@@ -1,0 +1,117 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+    -   id: trailing-whitespace
+    -   id: end-of-file-fixer
+    -   id: check-yaml
+        args: [--allow-multiple-documents]
+        exclude: ^(backend/sam/.*\.yaml|infra/.*\.ya?ml)$  # Exclude CloudFormation templates
+    -   id: check-added-large-files
+    -   id: check-json
+    -   id: check-toml
+    -   id: detect-private-key
+    -   id: debug-statements
+
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.0
+    hooks:
+    -   id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+    -   id: ruff-format
+        args: [--line-length=120]
+
+-   repo: https://github.com/python-poetry/poetry
+    rev: 1.7.1
+    hooks:
+    -   id: poetry-check
+        entry: bash -c "cd backend && poetry check"
+        language: system
+        pass_filenames: false
+
+-   repo: https://github.com/pre-commit/pygrep-hooks
+    rev: v1.10.0
+    hooks:
+    -   id: python-check-blanket-noqa
+    -   id: python-no-eval
+    -   id: python-use-type-annotations
+
+-   repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: 0.28.0
+    hooks:
+    -   id: check-github-workflows
+        files: ^\.github/workflows/
+
+-   repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.2
+    hooks:
+    -   id: gitleaks
+
+-   repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+    -   id: mypy
+        additional_dependencies: [types-requests, types-PyYAML]
+        args: [--ignore-missing-imports]
+        files: ^backend/
+
+-   repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v9.9.1
+    hooks:
+    -   id: eslint
+        pass_filenames: false  # Ensures eslint runs in the frontend/ directory instead of specific staged files
+        entry: bash -c "cd frontend && npx eslint . --fix"
+        additional_dependencies:
+        - eslint@8.57.0
+        - eslint-config-google@0.14.0
+        - eslint-config-next@13.5.4
+        - eslint-config-prettier@9.1.0
+        - eslint-plugin-jest@27.9.0
+        - eslint-plugin-react@7.33.2
+        - eslint-plugin-react-hooks@4.6.0
+
+-   repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0  # Use the appropriate version
+    hooks:
+    -   id: prettier
+        types_or: [javascript, jsx, ts, tsx, json, css, markdown]
+        args: ["--write", "frontend/**/*.{js,ts,jsx,tsx,json,css,md}"]
+        additional_dependencies:
+        - prettier@3.1.0
+
+-   repo: local
+    hooks:
+    -   id: frontend-tests
+        name: frontend-tests
+        entry: bash -c "cd frontend && npm test"
+        language: system
+        pass_filenames: false
+        always_run: true
+        files: ^frontend/
+        types: [javascript, jsx, json]
+
+-   repo: local
+    hooks:
+    -   id: pytest-check
+        name: pytest-check
+        entry: pytest
+        language: python
+        additional_dependencies: [
+            boto3,
+            botocore,
+            cryptography,
+            dotenv,
+            fastapi,
+            httpx,
+            nltk,
+            openai,
+            pinecone,
+            PyJWT,
+            pytest,
+            pytest-cov,
+            pytest-mock,
+            requests
+        ]
+        pass_filenames: false
+        always_run: true
+        args: [backend/tests/]

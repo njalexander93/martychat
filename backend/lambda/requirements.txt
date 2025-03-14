@@ -1,0 +1,6 @@
+boto3==1.36.15
+botocore==1.36.15
+nltk==3.9.1
+openai==1.66.3
+pinecone==6.0.2
+Requests==2.32.3

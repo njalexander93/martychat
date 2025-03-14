@@ -7,25 +7,26 @@ validates the request and creates a new user in the Cognito user pool.
 __author__ = "Nikolai Alexander"
 __email__ = "njalexander93@gmail.com"
 __version__ = "1.0.0"
-__date__ = "TBD"
+__date__ = "2025-02-28"
 __license__ = "Proprietary"
 __copyright__ = "Copyright (c) 2025 MartyChat"
 
-import os
-import json
+import base64
 import datetime
+import hashlib
+import hmac
+import json
 import logging
+import os
+
 import boto3
 import botocore.exceptions
-import base64
-import hmac
-import hashlib
 
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[logging.StreamHandler()] # Only use StreamHandler for CloudWatch
+    handlers=[logging.StreamHandler()],  # Only use StreamHandler for CloudWatch
 )
 logger = logging.getLogger(__name__)
 if os.getenv("ENV", "production") == "development":
@@ -38,8 +39,9 @@ CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "OPTIONS, GET, POST, PUT, PATCH, DELETE",
     "Access-Control-Allow-Headers": "X-Requested-With, content-type",
-    "Access-Control-Allow-Credentials": "true"  # Required for credentials-based requests
+    "Access-Control-Allow-Credentials": "true",  # Required for credentials-based requests
 }
+
 
 def get_user_pool_id() -> str:
     """Retrieve the AWS Cognito User Pool ID from AWS Systems Manager Parameter Store.
@@ -48,7 +50,7 @@ def get_user_pool_id() -> str:
         str: The AWS Cognito User Pool ID.
     """
     session = boto3.session.Session()
-    ssm = session.client("ssm") # Client for AWS Systems Manager Parameter Store
+    ssm = session.client("ssm")  # Client for AWS Systems Manager Parameter Store
 
     cognito_user_param = os.getenv("COGNITO_USER_PARAM")
     if not cognito_user_param:
@@ -63,6 +65,7 @@ def get_user_pool_id() -> str:
 
     return cognito_user_pool_id
 
+
 def get_client_metadata() -> dict:
     """Retrieve the AWS Cognito App Client ID from AWS Systems Manager Parameter Store.
 
@@ -70,8 +73,8 @@ def get_client_metadata() -> dict:
         dict: The AWS Cognito App Client ID and Client Secret.
     """
     session = boto3.session.Session()
-    secrets_manager = session.client("secretsmanager") # Client for AWS Secrets Manager
-    ssm = session.client("ssm") # Client for AWS Systems Manager Parameter Store
+    secrets_manager = session.client("secretsmanager")  # Client for AWS Secrets Manager
+    ssm = session.client("ssm")  # Client for AWS Systems Manager Parameter Store
 
     # Validate that the cognito client secret is set in the environment variables
     infra_secret_param = os.getenv("INFRA_SECRETS_PARAM")
@@ -104,10 +107,8 @@ def get_client_metadata() -> dict:
         logger.exception("Error getting Cognito Client ID from AWS Systems Manager Parameter Store.")
         raise RuntimeError("Error getting Cognito Client ID from AWS Systems Manager Parameter Store.") from e
 
-    return {
-        "cognito_client_id": cognito_client_id,
-        "cognito_client_secret": cognito_client_secret
-    }
+    return {"cognito_client_id": cognito_client_id, "cognito_client_secret": cognito_client_secret}
+
 
 def get_secret_hash(username: str, client_id: str, client_secret: str) -> str:
     """Generate the secret hash for the AWS Cognito authentication request.
@@ -116,27 +117,27 @@ def get_secret_hash(username: str, client_id: str, client_secret: str) -> str:
         username (str): The username of the user signing in.
         client_id (str): The client ID of the AWS Cognito app.
         client_secret (str): The client secret of the AWS Cognito app.
+
     Returns:
         str: The secret hash for the authentication request.
     """
     logger.info(f"Generating secret hash for {username} with client ID {client_id}")
     message = username + client_id
 
-    dig = hmac.new(
-        key=client_secret.encode("utf-8"),
-        msg=message.encode("utf-8"),
-        digestmod=hashlib.sha256
-    ).digest()
+    dig = hmac.new(key=client_secret.encode("utf-8"), msg=message.encode("utf-8"), digestmod=hashlib.sha256).digest()
 
     return base64.b64encode(dig).decode()
+
 
 def create_cognito_user(signup_parameters: dict) -> str:
     """Create a new user in the AWS Cognito user pool.
 
     Args:
         signup_parameters (dict): A dictionary containing the user information from the sign up form.
+
     Returns:
         str: The unique user ID (sub) from Cognito.
+
     Raises:
         RuntimeError: An error occurred initializing the Cognito client.
         RuntimeError: An error occurred creating the user in Cognito.
@@ -177,11 +178,7 @@ def create_cognito_user(signup_parameters: dict) -> str:
             UserPoolId=user_pool_id,
             ClientId=client_id,
             AuthFlow="ADMIN_NO_SRP_AUTH",
-            AuthParameters={
-                "USERNAME": email,
-                "PASSWORD": temp_password,
-                "SECRET_HASH": secret_hash
-            }
+            AuthParameters={"USERNAME": email, "PASSWORD": temp_password, "SECRET_HASH": secret_hash},
         )
 
         # Set the user's password to a permanent value
@@ -190,23 +187,19 @@ def create_cognito_user(signup_parameters: dict) -> str:
             cognito_client.admin_respond_to_auth_challenge(
                 UserPoolId=user_pool_id,
                 ClientId=client_id,
-                ChallengeName=auth_response['ChallengeName'],
-                ChallengeResponses={
-                    'USERNAME': email,
-                    'NEW_PASSWORD': password,
-                    'SECRET_HASH': new_secret_hash
-                },
-                Session=auth_response['Session']
+                ChallengeName=auth_response["ChallengeName"],
+                ChallengeResponses={"USERNAME": email, "NEW_PASSWORD": password, "SECRET_HASH": new_secret_hash},
+                Session=auth_response["Session"],
             )
         except cognito_client.exceptions.InvalidPasswordException as e:
             # If setting the password fails, delete the user and raise the exception
             cognito_client.admin_delete_user(UserPoolId=user_pool_id, Username=email)
             if "Password has previously been used" in str(e):
                 logger.error("This password has been previously used for this account.")
-                raise RuntimeError("This password has been previously used for this account.")
-    except cognito_client.exceptions.UsernameExistsException:
+                raise RuntimeError("This password has been previously used for this account.") from e
+    except cognito_client.exceptions.UsernameExistsException as e:
         logger.error("User already exists.")
-        raise RuntimeError("User already exists.")
+        raise RuntimeError("User already exists.") from e
     except botocore.exceptions.ClientError as e:
         logger.exception("Error creating user in Cognito.")
         raise RuntimeError(f"AWS Cognito error: {e.response['Error']['Message']}") from e
@@ -214,25 +207,35 @@ def create_cognito_user(signup_parameters: dict) -> str:
     try:
         # Get the unique user ID (sub) from the Cognito user attributes.
         user_id = next(attr["Value"] for attr in response["User"]["Attributes"] if attr["Name"] == "sub")
-    except StopIteration:
+    except StopIteration as e:
         logger.error("Error getting user ID from Cognito response.")
-        raise RuntimeError("Error getting user ID from Cognito response.")
+        raise RuntimeError("Error getting user ID from Cognito response.") from e
 
     return user_id
+
 
 def add_user_to_dynamodb(signup_parameters: dict) -> None:
     """Add the user profile data to the DynamoDB table.
 
     Args:
         signup_parameters (dict): A dictionary containing the user information from the sign up form.
+
     Raises:
         RuntimeError: An error occurred initializing the DynamoDB client.
         RuntimeError: An error occurred adding the user to the DynamoDB table.
     """
+    ssm = boto3.client("ssm")  # Client for AWS Secrets Manager
+
     # Initialize the DynamoDB client
     try:
+        dynamodb_user_table_param = os.getenv("DYNAMODB_USER_TABLE_PARAM")
+        if not dynamodb_user_table_param:
+            logger.error("DYNAMODB_TABLE_NAME environment variable is not set.")
+            raise RuntimeError("DYNAMODB_TABLE_NAME environment variable is not set.")
+
+        table_name = ssm.get_parameter(Name=dynamodb_user_table_param)["Parameter"]["Value"]
         dynamodb_client = boto3.resource("dynamodb", region_name=os.getenv("REGION_NAME", "us-east-1"))
-        table = dynamodb_client.Table("martychat_users-development")
+        table = dynamodb_client.Table(table_name)
     except Exception as e:
         logger.exception("Failed to initialize DynamoDB client.")
         raise RuntimeError(f"Failed to initialize DynamoDB client: {e}") from e
@@ -247,16 +250,17 @@ def add_user_to_dynamodb(signup_parameters: dict) -> None:
                 "last_name": signup_parameters["last_name"],
                 "organization": signup_parameters.get("organization", "N/A"),
                 "created_at": signup_parameters["created_at"],
-                "last_login": signup_parameters["last_login"]
+                "last_login": signup_parameters["last_login"],
             }
         )
     except Exception as e:
         logger.exception("Error adding user to DynamoDB.")
-        raise RuntimeError(f"Error adding user to DynamoDB: {str(e)}") from e
+        raise RuntimeError(f"Error adding user to DynamoDB: {e!s}") from e
 
     return
 
-def lambda_handler(event, context):
+
+def lambda_handler(event: dict, context: object) -> dict:
     """Lambda handler for adding a new user to AWS Cognito.
 
     This function processes a request from the sign up page to create a new user in AWS Cognito. The function
@@ -264,10 +268,10 @@ def lambda_handler(event, context):
     Args:
         event (dict): The event data passed to the Lambda function.
         context (object): The runtime information of the Lambda function.
+
     Returns:
         dict: The response data to return from the Lambda function.
     """
-
     try:
         # Parse the request body to get the user information from the sign up form
         body = json.loads(event["body"])
@@ -278,7 +282,7 @@ def lambda_handler(event, context):
             "last_name": body.get("lastName", "").strip(),
             "organization": body.get("organization", "").strip() or "N/A",
             "created_at": datetime.datetime.now().isoformat(),
-            "last_login": datetime.datetime.now().isoformat()
+            "last_login": datetime.datetime.now().isoformat(),
         }
 
         # Validate that all required fields are present
@@ -288,7 +292,7 @@ def lambda_handler(event, context):
             return {
                 "statusCode": 400,
                 "headers": CORS_HEADERS,
-                "body": json.dumps({"error": "Missing required fields."})
+                "body": json.dumps({"error": "Missing required fields."}),
             }
 
         # Create the new user in the Cognito user pool
@@ -300,14 +304,10 @@ def lambda_handler(event, context):
                 return {
                     "statusCode": 400,
                     "headers": CORS_HEADERS,
-                    "body": json.dumps({"error": "User already exists."})
+                    "body": json.dumps({"error": "User already exists."}),
                 }
             logger.exception("Error creating user in Cognito.")
-            return {
-                "statusCode": 500,
-                "headers": CORS_HEADERS,
-                "body": json.dumps({"error": str(e)})
-            }
+            return {"statusCode": 500, "headers": CORS_HEADERS, "body": json.dumps({"error": str(e)})}
 
         # Add the user profile data to the DynamoDB table
         add_user_to_dynamodb(signup_parameters)
@@ -315,12 +315,8 @@ def lambda_handler(event, context):
         return {
             "statusCode": 201,
             "headers": CORS_HEADERS,
-            "body": json.dumps({"message": "User created successfully!", "user": signup_parameters["user_id"]})
+            "body": json.dumps({"message": "User created successfully!", "user": signup_parameters["user_id"]}),
         }
     except Exception as e:
         logger.exception("Error creating user.")
-        return {
-            "statusCode": 500,
-            "headers": CORS_HEADERS,
-            "body": json.dumps({"error": str(e)})\
-        }
+        return {"statusCode": 500, "headers": CORS_HEADERS, "body": json.dumps({"error": str(e)})}

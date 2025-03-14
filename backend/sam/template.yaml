@@ -3,6 +3,36 @@ Transform: AWS::Serverless-2016-10-31
 
 Description: MartyChat Lambda Functions for Local Development
 
+Parameters:
+  REGION_NAME:
+    Type: String
+    Default: "us-east-1"
+    Description: "AWS Region for deployment"
+  API_SECRETS_PARAM:
+    Type: String
+    Description: "Parameter Store path for API secrets"
+  PINECONE_ENV_PARAM:
+    Type: String
+    Description: "Parameter Store path for Pinecone environment"
+  PINECONE_INDEX_PARAM:
+    Type: String
+    Description: "Parameter Store path for Pinecone index"
+  COGNITO_USER_PARAM:
+    Type: String
+    Description: "Parameter Store path for Cognito user pool ID"
+  COGNITO_CLIENT_PARAM:
+    Type: String
+    Description: "Parameter Store path for Cognito client ID"
+  INFRA_SECRETS_PARAM:
+    Type: String
+    Description: "Parameter Store path for infrastructure secrets"
+  DYNAMODB_USER_TABLE_PARAM:
+    Type: String
+    Description: "Parameter Store path for DynamoDB user table"
+  S3_PROMPTS_BUCKET:
+    Type: String
+    Description: "S3 bucket for prompts"
+
 Globals:
   Function:
     Timeout: 10
@@ -14,17 +44,18 @@ Globals:
         NEXT_PUBLIC_FRONTEND_URL: "http://localhost:3000"
         NEXT_PUBLIC_API_URL: "http://localhost:8000"
         NEXT_PUBLIC_LAMBDA_URL: "http://localhost:9000"
-        REGION_NAME: "us-east-1"
-        API_SECRETS_PARAM: "/martychat/secrets/api_keys"
-        PINECONE_ENV_PARAM: "/marty/pinecone/env"
-        PINECONE_INDEX_PARAM: "/marty/pinecone/index"
-        COGNITO_USER_PARAM: "/martychat/dev/cognito_user_pool_id"
-        COGNITO_CLIENT_PARAM: "/martychat/dev/cognito_app_client_id"
-        INFRA_SECRETS_PARAM: "/martychat/secrets/infrastructure_keys_dev"
-        DYNAMODB_USER_TABLE_PARAM: "/martychat/dev/dynamodb_user_table"
+        REGION_NAME: !Ref REGION_NAME
+        API_SECRETS_PARAM: !Ref API_SECRETS_PARAM
+        PINECONE_ENV_PARAM: !Ref PINECONE_ENV_PARAM
+        PINECONE_INDEX_PARAM: !Ref PINECONE_INDEX_PARAM
+        COGNITO_USER_PARAM: !Ref COGNITO_USER_PARAM
+        COGNITO_CLIENT_PARAM: !Ref COGNITO_CLIENT_PARAM
+        INFRA_SECRETS_PARAM: !Ref INFRA_SECRETS_PARAM
+        DYNAMODB_USER_TABLE_PARAM: !Ref DYNAMODB_USER_TABLE_PARAM
+        S3_PROMPTS_BUCKET: !Ref S3_PROMPTS_BUCKET
   Api:
     Auth:
-      DefaultAuthorizer: NONE  # Allow unauthenticated access
+      DefaultAuthorizer: NONE
     Cors:
       AllowMethods: "'OPTIONS,POST'"
       AllowHeaders: "'Content-Type,Authorization,X-Requested-With'"
@@ -38,7 +69,7 @@ Resources:
       Name: "MartyChatAPI"
       StageName: "dev"
       Auth:
-        DefaultAuthorizer: NONE  # Allow unauthenticated access
+        DefaultAuthorizer: NONE
       Cors:
         AllowMethods: "'OPTIONS,POST'"
         AllowHeaders: "'Content-Type,Authorization'"
@@ -72,7 +103,24 @@ Resources:
             Path: "/api/auth/signup"
             Method: POST
             Auth:
-              Authorizer: NONE  # Explicitly allow unauthenticated access for signup
+              Authorizer: NONE
+
+  DeleteUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: delete_user.lambda_handler
+      CodeUri: ../lambda/
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Events:
+        DeleteUserEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: "/api/auth/delete-user"
+            Method: POST
+            Auth:
+              Authorizer: NONE
 
   SignInFunction:
     Type: AWS::Serverless::Function
@@ -89,7 +137,7 @@ Resources:
             Path: "/api/auth/login"
             Method: POST
             Auth:
-              Authorizer: NONE  # Allow unauthenticated access for login
+              Authorizer: NONE
 
   TokenRefreshFunction:
     Type: AWS::Serverless::Function
@@ -109,9 +157,9 @@ Resources:
               Action:
                 - ssm:GetParameter
               Resource:
-                - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/martychat/dev/cognito_user_pool_id'
-                - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/martychat/dev/cognito_app_client_id'
-                - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/martychat/secrets/infrastructure_keys_dev'
+                - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${COGNITO_USER_PARAM}'
+                - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${COGNITO_CLIENT_PARAM}'
+                - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${INFRA_SECRETS_PARAM}'
             - Effect: Allow
               Action:
                 - secretsmanager:GetSecretValue
@@ -124,7 +172,7 @@ Resources:
             Path: "/api/auth/refresh"
             Method: POST
             Auth:
-              Authorizer: NONE  # Allow unauthenticated access for token refresh
+              Authorizer: NONE
 
   AnalyzeQueryComplexity:
       Type: AWS::Serverless::Function
@@ -141,7 +189,7 @@ Resources:
               Path: "/api/v1/analyze-query-complexity"
               Method: POST
               Auth:
-                Authorizer: NONE  # Allow unauthenticated access for query complexity analysis
+                Authorizer: NONE
 
   GetSimilarDocuments:
       Type: AWS::Serverless::Function
@@ -159,7 +207,7 @@ Resources:
               Path: "/api/v1/get-similar-documents"
               Method: POST
               Auth:
-                Authorizer: NONE  # Allow unauthenticated access for query complexity analysis
+                Authorizer: NONE
 
   GenerateResponseWithCitations:
       Type: AWS::Serverless::Function
@@ -177,4 +225,4 @@ Resources:
               Path: "/api/v1/generate-response-with-citations"
               Method: POST
               Auth:
-                Authorizer: NONE  # Allow unauthenticated access for query complexity analysis
+                Authorizer: NONE
