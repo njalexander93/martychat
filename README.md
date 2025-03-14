@@ -138,7 +138,7 @@ sam local invoke <Lambda Function in sam/template.yaml>
 ```sh
 python3 -m venv venv
 source venv/bin/activate  # (On Windows use `venv\Scripts\activate`)
-pip install -r requirements.txt
+pip install -r backend/requirements.txt
 ```
 
 #### Set Up Environment Variables

@@ -140,7 +140,7 @@ Run pip-audit
 
 ```sh
 pip install pip-audit
-pip-audit -r requirements.txt --ignore-vuln GHSA-hcpj-qp55-gfph
+pip-audit -r backend/requirements.txt --ignore-vuln GHSA-hcpj-qp55-gfph
 ```
 
 ## Screenshots (if applicable)
