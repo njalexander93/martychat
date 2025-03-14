@@ -52,8 +52,6 @@ ignore = [
     "D203",  # one-blank-line-before-class (conflicts with D211)
     "D212",  # multi-line-summary-first-line (conflicts with Google style)
     "D107",  # Missing docstring in __init__ (Google style allows this)
-    "ANN101", # Missing type annotation for `self` (not required by Google)
-    "ANN102", # Missing type annotation for `cls` (not required by Google)
 ]
 # Enable auto-fixing of errors where possible
 fix = true
