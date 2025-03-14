@@ -1,12 +1,17 @@
 # Ignore Python virtual environments
-venv/
-.venv/
+venv*/
+.venv*/
 .env.local
 *.pyc
 *.pyo
 *.pyd
 __pycache__/
 *.sqlite3
+
+# Ignore testing and linting caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
 
 # Ignore FastAPI dependencies and cache
 *.log
@@ -76,7 +81,6 @@ env.json
 .aws/
 config/
 credentials/
-backend/lambda/requirements.txt
 
 # Terraform and CloudFormation state files
 terraform.tfstate

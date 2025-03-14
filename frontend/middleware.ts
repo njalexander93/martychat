@@ -5,7 +5,7 @@
  * @author Nikolai Alexander
  * @email njalexander93@gmail.com
  * @version 1.0.0
- * @date TBD
+ * @date 2025-02-28
  * @license Proprietary
  * @copyright Copyright (c) 2025 MartyChat
  */
@@ -52,7 +52,5 @@ export const config = {
   // - api routes (/api/*)
   // - static files (_next/static/*)
   // - public files (favicon.ico, etc.)
-  matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|icon.ico|assets).*)',
-  ],
-}
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|icon.ico|assets).*)'],
+};

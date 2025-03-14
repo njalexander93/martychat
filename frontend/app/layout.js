@@ -10,9 +10,9 @@
  * @copyright Copyright (c) 2025 MartyChat
  */
 
-import { Roboto, Roboto_Slab, Roboto_Flex, Roboto_Mono, Roboto_Serif } from "next/font/google";
-import "./globals.css";
-import { ThemeLoader } from "@/styles/themeLoader";
+import { Roboto, Roboto_Slab, Roboto_Flex, Roboto_Mono, Roboto_Serif } from 'next/font/google';
+import './globals.css';
+import { ThemeLoader } from '@/styles/themeLoader';
 import { Metadata } from 'next';
 
 /**
@@ -20,18 +20,18 @@ import { Metadata } from 'next';
  * @type {Object}
  */
 export const metadata = {
-  title: "MartyChat • Your AI-Powered Psychology Assistant",
-  description: "Your AI-Powered Psychology Assistant.",
+  title: 'MartyChat • Your AI-Powered Psychology Assistant',
+  description: 'Your AI-Powered Psychology Assistant.',
 };
 
 /**
  * Load Google Fonts: Roboto Flex and Roboto Slab.
  */
-const roboto = Roboto({ variable: "--font-roboto", weight: "300", subsets: ["latin"], display: "swap"  });
-const robotoSlab = Roboto_Slab({ variable: "--font-roboto-slab", subsets: ["latin"], display: "swap" });
-const robotoFlex = Roboto_Flex({ variable: "--font-roboto-flex", subsets: ["latin"], display: "swap" });
-const robotoMono = Roboto_Mono({ variable: "--font-roboto-mono", subsets: ["latin"], display: "swap" });
-const robotoSerif = Roboto_Serif({ variable: "--font-roboto-serif", subsets: ["latin"], display: "swap" });
+const roboto = Roboto({ variable: '--font-roboto', weight: '300', subsets: ['latin'], display: 'swap' });
+const robotoSlab = Roboto_Slab({ variable: '--font-roboto-slab', subsets: ['latin'], display: 'swap' });
+const robotoFlex = Roboto_Flex({ variable: '--font-roboto-flex', subsets: ['latin'], display: 'swap' });
+const robotoMono = Roboto_Mono({ variable: '--font-roboto-mono', subsets: ['latin'], display: 'swap' });
+const robotoSerif = Roboto_Serif({ variable: '--font-roboto-serif', subsets: ['latin'], display: 'swap' });
 
 // Combine all font variables for body class
 const fontVariables = `${roboto.variable} ${robotoSlab.variable} ${robotoFlex.variable} ${robotoMono.variable} ${robotoSerif.variable}`;
